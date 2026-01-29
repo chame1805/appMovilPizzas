@@ -1,7 +1,7 @@
 package com.chame.myapplication
 
 import android.os.Bundle
-import android.widget.Toast // Importante para el mensaje de "Pedido enviado"
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -12,39 +12,36 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.chame.myapplication.core.di.AppContainer
 import com.chame.myapplication.features.pizzeriadistrito.di.PizzeriaModule
-import com.chame.myapplication.features.pizzeriadistrito.presentation.screens.OrderScreen // Asegúrate de haber creado este archivo
-import com.chame.myapplication.features.pizzeriadistrito.presentation.screens.PizzaMenuScreen
 import com.chame.myapplication.ui.theme.MyApplicationTheme
+// IMPORTS DE TUS PANTALLAS
+import com.chame.myapplication.features.pizzeriadistrito.presentation.screens.*
+// IMPORTS DE TUS DATOS (LOCAL Y DOMAIN)
+import com.chame.myapplication.features.pizzeriadistrito.data.datasources.local.OrderStorage
+import com.chame.myapplication.features.pizzeriadistrito.domain.entities.Order
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         val appContainer = AppContainer(applicationContext)
         val pizzeriaModule = PizzeriaModule(appContainer)
-
         enableEdgeToEdge()
+
         setContent {
             MyApplicationTheme {
-                // 1. Crear el controlador de navegación (el "chofer" de la app)
                 val navController = rememberNavController()
 
-                // 2. Definir el "Mapa" de pantallas
                 NavHost(navController = navController, startDestination = "menu") {
 
-                    // --- PANTALLA 1: MENÚ ---
+                    // RUTA 1: MENÚ
                     composable("menu") {
                         PizzaMenuScreen(
                             viewModelFactory = pizzeriaModule.providePizzaViewModelFactory(),
-                            // Aquí definimos qué pasa al dar clic en una pizza
-                            onPizzaClick = { nombre, precio ->
-                                // Navegamos a la ruta "order" y le pegamos los datos en la URL
-                                navController.navigate("order/$nombre/$precio")
-                            }
+                            onPizzaClick = { name, price -> navController.navigate("order/$name/$price") },
+                            onHistoryClick = { navController.navigate("history") }
                         )
                     }
 
-                    // --- PANTALLA 2: FORMULARIO DE ORDEN ---
+                    // RUTA 2: ORDEN
                     composable(
                         route = "order/{name}/{price}",
                         arguments = listOf(
@@ -52,20 +49,33 @@ class MainActivity : ComponentActivity() {
                             navArgument("price") { type = NavType.FloatType }
                         )
                     ) { backStackEntry ->
-                        // Recuperamos los datos que venían en la URL
-                        val name = backStackEntry.arguments?.getString("name") ?: ""
-                        val price = backStackEntry.arguments?.getFloat("price")?.toDouble() ?: 0.0
+                        val pizzaName = backStackEntry.arguments?.getString("name") ?: ""
+                        val pizzaPrice = backStackEntry.arguments?.getFloat("price")?.toDouble() ?: 0.0
 
-                        // Mostramos la pantalla de Orden
                         OrderScreen(
-                            pizzaName = name,
-                            pizzaPrice = price,
-                            onBackClick = { navController.popBackStack() }, // Volver atrás
-                            onPayClick = {
-                                Toast.makeText(applicationContext, "¡Pedido enviado!", Toast.LENGTH_LONG).show()
-                                navController.popBackStack() // Volver al menú
+                            pizzaName = pizzaName,
+                            pizzaPrice = pizzaPrice,
+                            onBackClick = { navController.popBackStack() },
+                            onPayClick = { client, paid, change ->
+                                // AQUÍ OCURRE LA MAGIA: Guardamos en Local Datasource
+                                val newOrder = Order(
+                                    pizzaName = pizzaName,
+                                    price = pizzaPrice,
+                                    clientName = client,
+                                    totalPaid = paid,
+                                    changeReturned = change
+                                )
+                                OrderStorage.addOrder(newOrder)
+
+                                Toast.makeText(applicationContext, "¡Venta Guardada!", Toast.LENGTH_SHORT).show()
+                                navController.popBackStack()
                             }
                         )
+                    }
+
+                    // RUTA 3: HISTORIAL
+                    composable("history") {
+                        HistoryScreen(onBackClick = { navController.popBackStack() })
                     }
                 }
             }

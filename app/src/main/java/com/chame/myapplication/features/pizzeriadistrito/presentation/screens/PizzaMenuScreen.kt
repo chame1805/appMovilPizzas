@@ -1,17 +1,15 @@
 package com.chame.myapplication.features.pizzeriadistrito.presentation.screens
 
-import androidx.compose.foundation.clickable // <--- IMPORTANTE
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -29,7 +27,8 @@ import com.chame.myapplication.features.pizzeriadistrito.presentation.viewModel.
 @Composable
 fun PizzaMenuScreen(
     viewModelFactory: PizzaViewModelFactory,
-    onPizzaClick: (String, Double) -> Unit // <--- 1. NUEVO: Recibimos una función para navegar
+    onPizzaClick: (String, Double) -> Unit,
+    onHistoryClick: () -> Unit // <--- ESTA LÍNEA ES LA QUE TE FALTA AHORITA
 ){
     val viewModel : PizzaViewModel = viewModel(factory = viewModelFactory)
     val menuState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -38,7 +37,13 @@ fun PizzaMenuScreen(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Menu Pizzeria", fontWeight = FontWeight.ExtraBold) }
+                title = { Text("Menu Pizzeria", fontWeight = FontWeight.ExtraBold) },
+                actions = {
+                    // Botón del Historial (Arriba a la derecha)
+                    IconButton(onClick = onHistoryClick) {
+                        Icon(Icons.Default.DateRange, contentDescription = "Historial")
+                    }
+                }
             )
         }
     ) { contentPadding ->
@@ -68,7 +73,6 @@ fun PizzaMenuScreen(
                                 name = pizzaItem.name,
                                 price = pizzaItem.price,
                                 imageUrl = pizzaItem.imagenUrl,
-                                // 2. NUEVO: Agregamos el modificador clickable a la tarjeta
                                 modifier = Modifier.clickable {
                                     onPizzaClick(pizzaItem.name, pizzaItem.price)
                                 }
