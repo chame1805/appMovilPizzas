@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.chame.myapplication.feacture.auth.domian.usescases.LoginUseCase
 
 class AuthViewModelFactory(
-    private val loginUseCase: LoginUseCase // <--- Ahora recibe el caso de uso
+    private val loginUseCase: LoginUseCase
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
