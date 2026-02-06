@@ -1,6 +1,7 @@
 package com.chame.myapplication.features.pizzeriadistrito.presentation.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -12,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -20,67 +22,103 @@ fun OrderScreen(
     pizzaName: String,
     pizzaPrice: Double,
     onBackClick: () -> Unit,
-    // Callback que devuelve los datos al Main
     onPayClick: (String, Double, Double) -> Unit
 ) {
     var clientName by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
     var amountPaidText by remember { mutableStateOf("") }
 
+    val pizzaOrange = Color(0xFFE65100)
     val amountPaid = amountPaidText.toDoubleOrNull() ?: 0.0
     val change = amountPaid - pizzaPrice
     val isPaymentSufficient = amountPaid >= pizzaPrice
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Orden: $pizzaName") },
+            CenterAlignedTopAppBar(
+                title = { Text("DETALLE DE ORDEN", fontWeight = FontWeight.Black) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás", tint = Color.White)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = pizzaOrange,
+                    titleContentColor = Color.White
+                )
             )
         }
     ) { padding ->
         Column(
-            modifier = Modifier.padding(padding).padding(16.dp).fillMaxSize(),
+            modifier = Modifier
+                .padding(padding)
+                .padding(24.dp)
+                .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Total: $$pizzaPrice", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Text("TOTAL A COBRAR", fontSize = 14.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+            Text("$${String.format(Locale.US, "%.2f", pizzaPrice)}", fontSize = 42.sp, fontWeight = FontWeight.Black, color = pizzaOrange)
 
-            Spacer(modifier = Modifier.height(16.dp))
-            OutlinedTextField(value = clientName, onValueChange = { clientName = it }, label = { Text("Nombre Cliente") }, modifier = Modifier.fillMaxWidth())
+            Spacer(modifier = Modifier.height(32.dp))
 
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(value = address, onValueChange = { address = it }, label = { Text("Dirección") }, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(
+                value = clientName,
+                onValueChange = { clientName = it },
+                label = { Text("Nombre del Cliente") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp)
+            )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = address,
+                onValueChange = { address = it },
+                label = { Text("Dirección de Entrega") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp)
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             OutlinedTextField(
                 value = amountPaidText,
                 onValueChange = { if (it.all { c -> c.isDigit() || c == '.' }) amountPaidText = it },
-                label = { Text("¿Con cuánto paga?") },
+                label = { Text("Monto Recibido") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
-                prefix = { Text("$") }
+                prefix = { Text("$ ") },
+                shape = RoundedCornerShape(16.dp)
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+
             if (amountPaidText.isNotEmpty()) {
-                Text(
-                    text = if (isPaymentSufficient) "Cambio: $${String.format(Locale.US, "%.2f", change)}" else "Falta: $${String.format(Locale.US, "%.2f", -change)}",
-                    color = if (isPaymentSufficient) Color(0xFF4CAF50) else Color.Red,
-                    fontWeight = FontWeight.Bold
-                )
+                val color = if (isPaymentSufficient) Color(0xFF2E7D32) else Color.Red
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = if (isPaymentSufficient) "CAMBIO: $${String.format(Locale.US, "%.2f", change)}" else "FALTA: $${String.format(Locale.US, "%.2f", -change)}",
+                        modifier = Modifier.padding(16.dp),
+                        color = color,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 20.sp
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.weight(1f))
+
             Button(
                 onClick = { onPayClick(clientName, amountPaid, change) },
                 enabled = clientName.isNotEmpty() && address.isNotEmpty() && isPaymentSufficient,
-                modifier = Modifier.fillMaxWidth().height(50.dp)
+                modifier = Modifier.fillMaxWidth().height(65.dp),
+                shape = RoundedCornerShape(32.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = pizzaOrange)
             ) {
-                Text("CONFIRMAR PAGO")
+                Text("FINALIZAR VENTA", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
             }
         }
     }

@@ -1,6 +1,5 @@
 package com.chame.myapplication.features.pizzeriadistrito.presentation.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,166 +14,76 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-// Mantenemos tu import de datos
 import com.chame.myapplication.features.pizzeriadistrito.data.datasources.local.OrderStorage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryScreen(onBackClick: () -> Unit) {
-    // Obtenemos las ordenes (invertidas para ver las más recientes primero, opcional)
     val orders = OrderStorage.orders.reversed()
-
-    // Colores de la marca
-    val pizzaPrimaryColor = Color(0xFFE65100)
-    val backgroundColor = Color(0xFFF5F5F5)
-    val successColor = Color(0xFF2E7D32) // Verde más elegante
+    val pizzaOrange = Color(0xFFE65100)
+    val successColor = Color(0xFF2E7D32)
 
     Scaffold(
-        containerColor = backgroundColor,
+        containerColor = Color(0xFFF9F9F9),
         topBar = {
             CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        "Historial de Ventas",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp
-                    )
-                },
+                title = { Text("HISTORIAL DE CAJA", fontWeight = FontWeight.Black) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Atrás",
-                            tint = Color.White
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás", tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = pizzaPrimaryColor,
+                    containerColor = pizzaOrange,
                     titleContentColor = Color.White
                 )
             )
         }
     ) { padding ->
         if (orders.isEmpty()) {
-            // Estado vacío más bonito
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
+                modifier = Modifier.fillMaxSize().padding(padding),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.ShoppingCart,
-                    contentDescription = null,
-                    modifier = Modifier.size(64.dp),
-                    tint = Color.LightGray
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "Aún no hay ventas registradas",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.Gray
-                )
+                Icon(Icons.Default.ShoppingCart, null, Modifier.size(64.dp), Color.LightGray)
+                Text("No hay ventas hoy", color = Color.Gray, fontWeight = FontWeight.Bold)
             }
         } else {
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
+                modifier = Modifier.padding(padding),
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 items(orders) { order ->
                     Card(
                         colors = CardDefaults.cardColors(containerColor = Color.White),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth()
+                        shape = RoundedCornerShape(20.dp),
+                        elevation = CardDefaults.cardElevation(4.dp)
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .padding(16.dp)
-                                .fillMaxWidth()
-                        ) {
-                            // Encabezado: Nombre de Pizza y Fecha
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = order.pizzaName,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = Color.Black
-                                )
-                                Surface(
-                                    color = backgroundColor, // Fondo grisecito para la fecha
-                                    shape = RoundedCornerShape(4.dp)
-                                ) {
-                                    Text(
-                                        text = order.date,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                        color = Color.Gray
-                                    )
-                                }
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
+                                Text(order.pizzaName, fontWeight = FontWeight.Black, fontSize = 18.sp)
+                                Text(order.date, color = Color.Gray, fontSize = 12.sp)
                             }
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            // Sección de Cliente
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Person,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                    tint = Color.Gray
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = order.clientName,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = Color.DarkGray
-                                )
+                                Icon(Icons.Default.Person, null, Modifier.size(14.dp), Color.Gray)
+                                Spacer(Modifier.width(4.dp))
+                                Text(order.clientName, color = Color.Gray, fontSize = 14.sp)
                             }
 
-                            HorizontalDivider(
-                                modifier = Modifier.padding(vertical = 12.dp),
-                                thickness = 1.dp,
-                                color = Color(0xFFEEEEEE)
-                            )
+                            HorizontalDivider(Modifier.padding(vertical = 12.dp), color = Color(0xFFF0F0F0))
 
-                            // Detalles Financieros
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                // Columna Izquierda: Detalles
+                            Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
                                 Column {
-                                    Text("Precio Pizza:", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-                                    Text("$${order.price}", fontWeight = FontWeight.SemiBold)
-
-                                    Spacer(modifier = Modifier.height(4.dp))
-
-                                    Text("Recibido:", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-                                    Text("$${order.totalPaid}", fontWeight = FontWeight.SemiBold)
+                                    Text("PAGÓ", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+                                    Text("$${String.format("%.2f", order.totalPaid)}", fontWeight = FontWeight.Bold)
                                 }
-
-                                // Columna Derecha: El cambio (Resaltado)
                                 Column(horizontalAlignment = Alignment.End) {
-                                    Text("CAMBIO", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = successColor)
-                                    Text(
-                                        text = "$${String.format("%.2f", order.changeReturned)}",
-                                        style = MaterialTheme.typography.headlineSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = successColor
-                                    )
+                                    Text("CAMBIO", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = successColor)
+                                    Text("$${String.format("%.2f", order.changeReturned)}", fontSize = 22.sp, fontWeight = FontWeight.Black, color = successColor)
                                 }
                             }
                         }
