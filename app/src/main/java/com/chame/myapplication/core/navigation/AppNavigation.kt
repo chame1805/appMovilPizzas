@@ -1,7 +1,9 @@
 package com.chame.myapplication.core.navigation
+
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -9,6 +11,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.chame.myapplication.feacture.auth.di.AuthModule
 import com.chame.myapplication.feacture.auth.presentation.screens.LoginScreen
+import com.chame.myapplication.feactures.Admin.di.AdminModule
+import com.chame.myapplication.feactures.Admin.presentation.screens.AdminScreen
+import com.chame.myapplication.feactures.Admin.presentation.viewModel.AdminViewModel
 import com.chame.myapplication.features.pizzeriadistrito.data.datasources.local.OrderStorage
 import com.chame.myapplication.features.pizzeriadistrito.di.PizzeriaModule
 import com.chame.myapplication.features.pizzeriadistrito.domain.entities.Order
@@ -18,7 +23,8 @@ import com.chame.myapplication.features.pizzeriadistrito.presentation.screens.*
 fun AppNavigation(
     navController: NavHostController,
     authModule: AuthModule,
-    pizzeriaModule: PizzeriaModule
+    pizzeriaModule: PizzeriaModule,
+    adminModule: AdminModule // Agregamos el módulo admin
 ) {
     val context = LocalContext.current
 
@@ -33,9 +39,18 @@ fun AppNavigation(
                     }
                 },
                 onNavigateToAdmin = {
-                    Toast.makeText(context, "Login Admin", Toast.LENGTH_SHORT).show()
+                    // Ahora navegamos a la vista de admin
+                    navController.navigate("admin")
                 }
             )
+        }
+
+        // --- RUTA DE ADMINISTRACIÓN ---
+        composable("admin") {
+            val adminViewModel: AdminViewModel = viewModel(
+                factory = adminModule.provideAdminViewModelFactory()
+            )
+            AdminScreen(viewModel = adminViewModel)
         }
 
         composable("menu") {
