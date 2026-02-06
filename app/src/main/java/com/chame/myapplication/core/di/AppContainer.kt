@@ -11,7 +11,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 class AppContainer(context: Context) {
     private val _retrofit = Retrofit.Builder()
         // Usa 10.0.2.2 si estás en el emulador de Android Studio
-        .baseUrl("http://10.0.2.2:8000/")
+        .baseUrl("http://44.212.148.188:8000")
         .addConverterFactory(GsonConverterFactory.create())
         .build()
 
