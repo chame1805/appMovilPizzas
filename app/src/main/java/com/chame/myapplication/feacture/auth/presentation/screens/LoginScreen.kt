@@ -26,7 +26,8 @@ import com.chame.myapplication.feacture.auth.presentation.viewModel.AuthViewMode
 fun LoginScreen(
     viewModelFactory: AuthViewModelFactory,
     onNavigateToMenu: () -> Unit,
-    onNavigateToAdmin: () -> Unit
+    onNavigateToAdmin: () -> Unit,
+    onNavigateToRegister: () -> Unit // ✅ NUEVO
 ) {
     val viewModel: AuthViewModel = viewModel(factory = viewModelFactory)
     var showAdminDialog by remember { mutableStateOf(false) }
@@ -69,6 +70,17 @@ fun LoginScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = pizzaOrange)
             ) {
                 Text("ACCEDER AL SISTEMA", fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
+            }
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            // ✅ Botón para ir a Registro
+            TextButton(onClick = onNavigateToRegister) {
+                Text(
+                    text = "¿No tienes cuenta?  Crear cuenta",
+                    color = pizzaOrange,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
 

@@ -11,50 +11,61 @@ import com.chame.myapplication.feactures.Admin.data.repositories.PizzaAdminRepos
 import com.chame.myapplication.feactures.Admin.domain.repositories.PizzaAdminRepository
 import com.chame.myapplication.feactures.Admin.domain.usescases.*
 
-// --- IMPORTACIONES DE AUTH ---
+// --- IMPORTACIONES DE AUTH (LOGIN) ---
 import com.chame.myapplication.feacture.auth.data.datasource.AuthApi
 import com.chame.myapplication.feacture.auth.data.repositories.AuthRepositoryImpl
 import com.chame.myapplication.feacture.auth.domian.repositories.AuthRepository
 import com.chame.myapplication.feacture.auth.domian.usescases.LoginUseCase
 
+// --- IMPORTACIONES DE REGISTER ---
+import com.chame.myapplication.feacture.register.data.datasource.RegisterApi
+
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 class AppContainer(context: Context) {
-    private val _retrofit = Retrofit.Builder()
-        .baseUrl("http://44.212.148.188:8000")
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
 
-    // --- 1. SECCIÓN DE VENTAS ---
-    val pizzeriaApi : PizzeriaApi by lazy {
-        _retrofit.create(PizzeriaApi::class.java)
+    // ✅ ESTE ES TU RETROFIT REAL (YA NO Any, YA NO TODO())
+    val retrofit: Retrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl("http://44.212.148.188:8000/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
     }
 
-    val pizzaRepository : PizzaRepository by lazy {
+    // --- 1. SECCIÓN DE VENTAS ---
+    val pizzeriaApi: PizzeriaApi by lazy {
+        retrofit.create(PizzeriaApi::class.java)
+    }
+
+    val pizzaRepository: PizzaRepository by lazy {
         PizzaRepositoryImpl(pizzeriaApi)
     }
 
-    // --- 2. SECCIÓN DE AUTENTICACIÓN ---
-    private val authApi : AuthApi by lazy {
-        _retrofit.create(AuthApi::class.java)
+    // --- 2. SECCIÓN DE AUTENTICACIÓN (LOGIN) ---
+    val authApi: AuthApi by lazy {
+        retrofit.create(AuthApi::class.java)
     }
 
-    private val authRepository : AuthRepository by lazy {
+    private val authRepository: AuthRepository by lazy {
         AuthRepositoryImpl(authApi)
     }
 
-    val loginUseCase : LoginUseCase by lazy {
+    val loginUseCase: LoginUseCase by lazy {
         LoginUseCase(authRepository)
     }
 
-    // --- 3. SECCIÓN ADMIN (CORREGIDO) ---
-    private val adminApi : AdminApi by lazy {
-        // CORRECCIÓN: Se debe usar AdminApi::class.java (la Interfaz), no adminApi (la variable)
-        _retrofit.create(AdminApi::class.java)
+    // --- 2.1 SECCIÓN DE REGISTER (NUEVO) ---
+    val registerApi: RegisterApi by lazy {
+        retrofit.create(RegisterApi::class.java)
     }
 
-    private val pizzaAdminRepository : PizzaAdminRepository by lazy {
+    // --- 3. SECCIÓN ADMIN ---
+    val adminApi: AdminApi by lazy {
+        retrofit.create(AdminApi::class.java)
+    }
+
+    private val pizzaAdminRepository: PizzaAdminRepository by lazy {
         PizzaAdminRepositoryImpl(adminApi)
     }
 
