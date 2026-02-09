@@ -19,12 +19,8 @@ fun RegisterScreen(
     onBack: () -> Unit,
     onSuccess: () -> Unit
 ) {
+    // Obtenemos el ViewModel con la factoría
     val vm: RegisterViewModel = viewModel(factory = viewModelFactory)
-
-    var name by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-
     val pizzaOrange = Color(0xFFE65100)
 
     AlertDialog(
@@ -32,54 +28,75 @@ fun RegisterScreen(
             vm.clearError()
             onBack()
         },
-        title = { Text("REGISTRO", fontWeight = FontWeight.Black) },
+        title = {
+            Text("REGISTRO DE USUARIO", fontWeight = FontWeight.Black)
+        },
         text = {
             Column {
+                // CAMPO NOMBRE - Conectado al ViewModel
                 OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Nombre") },
+                    value = vm.nameInput.value,
+                    onValueChange = { vm.onNameChange(it) },
+                    label = { Text("Nombre Completo") },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(16.dp),
+                    singleLine = true
                 )
+
                 Spacer(modifier = Modifier.height(12.dp))
+
+                // CAMPO EMAIL - Conectado al ViewModel
                 OutlinedTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    label = { Text("Email") },
+                    value = vm.emailInput.value,
+                    onValueChange = { vm.onEmailChange(it) },
+                    label = { Text("Correo Electrónico") },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(16.dp),
+                    singleLine = true
                 )
+
                 Spacer(modifier = Modifier.height(12.dp))
+
+                // CAMPO CONTRASEÑA - Conectado al ViewModel
                 OutlinedTextField(
-                    value = password,
-                    onValueChange = { password = it },
+                    value = vm.passwordInput.value,
+                    onValueChange = { vm.onPasswordChange(it) },
                     label = { Text("Contraseña") },
                     visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(16.dp),
+                    singleLine = true
                 )
 
+                // Mensaje de Error dinámico desde el ViewModel
                 if (!vm.errorMessage.value.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(10.dp))
-                    Text(vm.errorMessage.value!!, color = MaterialTheme.colorScheme.error)
+                    Text(
+                        text = vm.errorMessage.value!!,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
                 }
             }
         },
         confirmButton = {
             Button(
                 onClick = {
-                    vm.register(name, email, password) {
-                        onSuccess()
-                    }
+                    // Ya no pasamos parámetros aquí, el VM ya tiene los datos
+                    vm.register { onSuccess() }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = pizzaOrange),
-                enabled = !vm.isLoading.value
+                // Deshabilitar mientras carga o si los campos están vacíos
+                enabled = !vm.isLoading.value &&
+                        vm.nameInput.value.isNotBlank() &&
+                        vm.emailInput.value.isNotBlank() &&
+                        vm.passwordInput.value.isNotBlank()
             ) {
                 if (vm.isLoading.value) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
-                        color = Color.White
+                        color = Color.White,
+                        strokeWidth = 2.dp
                     )
                 } else {
                     Text("CREAR CUENTA", fontWeight = FontWeight.Bold)

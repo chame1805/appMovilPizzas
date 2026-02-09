@@ -14,6 +14,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.chame.myapplication.features.pizzeriadistrito.presentation.viewModel.OrderViewModel
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -22,16 +25,13 @@ fun OrderScreen(
     pizzaName: String,
     pizzaPrice: Double,
     onBackClick: () -> Unit,
-    onPayClick: (String, Double, Double) -> Unit
+    onPayClick: (String, Double, Double) -> Unit,
+    // Inyectamos el ViewModel de la Orden
+    orderViewModel: OrderViewModel = viewModel()
 ) {
-    var clientName by remember { mutableStateOf("") }
-    var address by remember { mutableStateOf("") }
-    var amountPaidText by remember { mutableStateOf("") }
-
+    // Obtenemos el estado igual que en el menú de pizzas
+    val state by orderViewModel.uiState.collectAsStateWithLifecycle()
     val pizzaOrange = Color(0xFFE65100)
-    val amountPaid = amountPaidText.toDoubleOrNull() ?: 0.0
-    val change = amountPaid - pizzaPrice
-    val isPaymentSufficient = amountPaid >= pizzaPrice
 
     Scaffold(
         topBar = {
@@ -50,10 +50,7 @@ fun OrderScreen(
         }
     ) { padding ->
         Column(
-            modifier = Modifier
-                .padding(padding)
-                .padding(24.dp)
-                .fillMaxSize(),
+            modifier = Modifier.padding(padding).padding(24.dp).fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text("TOTAL A COBRAR", fontSize = 14.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
@@ -62,8 +59,8 @@ fun OrderScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             OutlinedTextField(
-                value = clientName,
-                onValueChange = { clientName = it },
+                value = state.clientName,
+                onValueChange = { orderViewModel.onClientNameChange(it) },
                 label = { Text("Nombre del Cliente") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp)
@@ -72,8 +69,8 @@ fun OrderScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
-                value = address,
-                onValueChange = { address = it },
+                value = state.address,
+                onValueChange = { orderViewModel.onAddressChange(it) },
                 label = { Text("Dirección de Entrega") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp)
@@ -82,8 +79,8 @@ fun OrderScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
-                value = amountPaidText,
-                onValueChange = { if (it.all { c -> c.isDigit() || c == '.' }) amountPaidText = it },
+                value = state.amountPaidText,
+                onValueChange = { orderViewModel.onAmountPaidChange(it, pizzaPrice) },
                 label = { Text("Monto Recibido") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
@@ -93,14 +90,15 @@ fun OrderScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            if (amountPaidText.isNotEmpty()) {
-                val color = if (isPaymentSufficient) Color(0xFF2E7D32) else Color.Red
+            if (state.amountPaidText.isNotEmpty()) {
+                val color = if (state.isPaymentSufficient) Color(0xFF2E7D32) else Color.Red
                 Card(
                     colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f)),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = if (isPaymentSufficient) "CAMBIO: $${String.format(Locale.US, "%.2f", change)}" else "FALTA: $${String.format(Locale.US, "%.2f", -change)}",
+                        text = if (state.isPaymentSufficient) "CAMBIO: $${String.format(Locale.US, "%.2f", state.change)}"
+                        else "FALTA: $${String.format(Locale.US, "%.2f", -state.change)}",
                         modifier = Modifier.padding(16.dp),
                         color = color,
                         fontWeight = FontWeight.Black,
@@ -112,8 +110,8 @@ fun OrderScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             Button(
-                onClick = { onPayClick(clientName, amountPaid, change) },
-                enabled = clientName.isNotEmpty() && address.isNotEmpty() && isPaymentSufficient,
+                onClick = { onPayClick(state.clientName, state.amountPaidText.toDoubleOrNull() ?: 0.0, state.change) },
+                enabled = state.clientName.isNotEmpty() && state.address.isNotEmpty() && state.isPaymentSufficient,
                 modifier = Modifier.fillMaxWidth().height(65.dp),
                 shape = RoundedCornerShape(32.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = pizzaOrange)
