@@ -20,35 +20,58 @@ class AdminViewModel(
 
     init { loadPizzas() }
 
+    fun onOpenDialog(pizza: Pizza? = null) {
+        uiState = uiState.copy(
+            isDialogVisible = true,
+            selectedPizza = pizza,
+            nombreInput = pizza?.nombre ?: "",
+            precioInput = pizza?.precio?.toString() ?: ""
+        )
+    }
+
+    fun onDismissDialog() {
+        uiState = uiState.copy(isDialogVisible = false)
+    }
+
+    fun onNombreChange(nuevoNombre: String) {
+        uiState = uiState.copy(nombreInput = nuevoNombre)
+    }
+
+    fun onPrecioChange(nuevoPrecio: String) {
+        uiState = uiState.copy(precioInput = nuevoPrecio)
+    }
+
+
     fun loadPizzas() {
         viewModelScope.launch {
             uiState = uiState.copy(isLoading = true, error = null)
             getPizzasUseCase().onSuccess { lista ->
                 uiState = uiState.copy(pizzas = lista, isLoading = false)
             }.onFailure { e ->
-                uiState = uiState.copy(isLoading = false, error = e.message ?: "Error al cargar pizzas")
+                uiState = uiState.copy(isLoading = false, error = e.message ?: "Error al cargar")
             }
         }
     }
 
-    fun addPizza(nombre: String, precio: Double) {
-        viewModelScope.launch {
-            uiState = uiState.copy(isLoading = true)
-            createPizzaUseCase(Pizza(nombre = nombre, precio = precio)).onSuccess {
-                loadPizzas() // Recargamos la lista tras el éxito
-            }.onFailure { e ->
-                uiState = uiState.copy(isLoading = false, error = "No se pudo agregar la pizza")
-            }
-        }
-    }
+    fun savePizza() {
+        val nombre = uiState.nombreInput
+        val precio = uiState.precioInput.toDoubleOrNull() ?: 0.0
+        val pizzaActual = uiState.selectedPizza
 
-    fun editPizza(id: Int, nombre: String, precio: Double) {
         viewModelScope.launch {
-            uiState = uiState.copy(isLoading = true)
-            updatePizzaUseCase(id, Pizza(nombre = nombre, precio = precio)).onSuccess {
+            uiState = uiState.copy(isLoading = true, isDialogVisible = false)
+
+            val result = if (pizzaActual == null) {
+                createPizzaUseCase(Pizza(nombre = nombre, precio = precio))
+            } else {
+                pizzaActual.id?.let { updatePizzaUseCase(it, Pizza(nombre = nombre, precio = precio)) }
+                    ?: Result.failure(Exception("ID no encontrado"))
+            }
+
+            result.onSuccess {
                 loadPizzas()
             }.onFailure { e ->
-                uiState = uiState.copy(isLoading = false, error = "Error al editar")
+                uiState = uiState.copy(isLoading = false, error = "Error al guardar pizza")
             }
         }
     }
@@ -58,8 +81,8 @@ class AdminViewModel(
             uiState = uiState.copy(isLoading = true)
             deletePizzaUseCase(id).onSuccess {
                 loadPizzas()
-            }.onFailure { e ->
-                uiState = uiState.copy(isLoading = false, error = "Error al eliminar")
+            }.onFailure {
+                uiState = uiState.copy(isLoading = false, error = "No se pudo eliminar")
             }
         }
     }

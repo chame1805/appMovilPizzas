@@ -1,44 +1,47 @@
 package com.chame.myapplication.feacture.auth.presentation.viewModel
 
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.chame.myapplication.feacture.auth.domian.usescases.LoginUseCase
+import com.chame.myapplication.feacture.auth.presentation.screens.AuthUiState
 import kotlinx.coroutines.launch
 
 class AuthViewModel(
     private val loginUseCase: LoginUseCase
 ) : ViewModel() {
 
-    private val _isLoading = mutableStateOf(false)
-    val isLoading: State<Boolean> = _isLoading
+    var uiState by mutableStateOf(AuthUiState())
+        private set
 
-    private val _errorMessage = mutableStateOf<String?>(null)
-    val errorMessage: State<String?> = _errorMessage
+    fun onOpenAdminDialog() {
+        uiState = uiState.copy(showAdminDialog = true, errorMessage = null)
+    }
+
+    fun onDismissAdminDialog() {
+        uiState = uiState.copy(showAdminDialog = false, errorMessage = null)
+    }
+
+    fun loginAdmin(email: String, pass: String, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            uiState = uiState.copy(isLoading = true, errorMessage = null)
+
+            val result = loginUseCase(email, pass)
+
+            result.onSuccess {
+                uiState = uiState.copy(isLoading = false, showAdminDialog = false)
+                onSuccess()
+            }.onFailure {
+                uiState = uiState.copy(isLoading = false, errorMessage = "Credenciales incorrectas")
+            }
+        }
+    }
 
     fun onLoginSuccess(navigateToMenu: () -> Unit) {
         navigateToMenu()
     }
 
-    fun loginAdmin(email: String, pass: String, onSuccess: () -> Unit) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            _errorMessage.value = null
-
-            val result = loginUseCase(email, pass)
-
-            result.onSuccess {
-                _isLoading.value = false
-                onSuccess() // Navegación al éxito
-            }.onFailure {
-                _isLoading.value = false
-                _errorMessage.value = "Credenciales incorrectas"
-            }
-        }
-    }
-
     fun clearError() {
-        _errorMessage.value = null
+        uiState = uiState.copy(errorMessage = null)
     }
 }

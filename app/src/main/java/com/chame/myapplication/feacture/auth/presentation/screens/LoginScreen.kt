@@ -27,10 +27,10 @@ fun LoginScreen(
     viewModelFactory: AuthViewModelFactory,
     onNavigateToMenu: () -> Unit,
     onNavigateToAdmin: () -> Unit,
-    onNavigateToRegister: () -> Unit // ✅ NUEVO
+    onNavigateToRegister: () -> Unit
 ) {
     val viewModel: AuthViewModel = viewModel(factory = viewModelFactory)
-    var showAdminDialog by remember { mutableStateOf(false) }
+    val state = viewModel.uiState // Leemos el estado centralizado
 
     val pizzaOrange = Color(0xFFE65100)
     val pizzaYellow = Color(0xFFFFB74D)
@@ -41,9 +41,8 @@ fun LoginScreen(
             .background(Brush.verticalGradient(listOf(pizzaYellow, Color.White)))
             .padding(24.dp)
     ) {
-        // Botón Administración
         TextButton(
-            onClick = { showAdminDialog = true },
+            onClick = { viewModel.onOpenAdminDialog() },
             modifier = Modifier.align(Alignment.TopEnd).statusBarsPadding()
         ) {
             Icon(Icons.Default.Person, contentDescription = null, tint = pizzaOrange)
@@ -74,7 +73,6 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // ✅ Botón para ir a Registro
             TextButton(onClick = onNavigateToRegister) {
                 Text(
                     text = "¿No tienes cuenta?  Crear cuenta",
@@ -84,14 +82,13 @@ fun LoginScreen(
             }
         }
 
-        if (showAdminDialog) {
+        if (state.showAdminDialog) {
             AdminLoginDialog(
-                onDismiss = { showAdminDialog = false; viewModel.clearError() },
-                isLoading = viewModel.isLoading.value,
-                errorMessage = viewModel.errorMessage.value,
+                onDismiss = { viewModel.onDismissAdminDialog() },
+                isLoading = state.isLoading,
+                errorMessage = state.errorMessage,
                 onLogin = { email, password ->
                     viewModel.loginAdmin(email, password) {
-                        showAdminDialog = false
                         onNavigateToAdmin()
                     }
                 }
