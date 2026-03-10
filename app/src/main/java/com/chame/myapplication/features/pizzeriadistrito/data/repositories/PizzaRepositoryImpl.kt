@@ -4,8 +4,9 @@ import com.chame.myapplication.core.network.PizzeriaApi
 import com.chame.myapplication.features.pizzeriadistrito.data.datasources.remote.maper.toDomain
 import com.chame.myapplication.features.pizzeriadistrito.domain.entities.Pizzas
 import com.chame.myapplication.features.pizzeriadistrito.domain.repositories.PizzaRepository
+import javax.inject.Inject
 
-class PizzaRepositoryImpl (
+class PizzaRepositoryImpl @Inject constructor(
     private val _api : PizzeriaApi
 ) : PizzaRepository {
     override suspend fun getPizzas() : List<Pizzas> {
