@@ -24,11 +24,15 @@ class RegisterViewModel(
 
             registerUseCase(name, email, pass)
                 .onSuccess { onSuccess() }
-                .onFailure { _errorMessage.value = "No se pudo registrar" }
+                .onFailure {
+                    _errorMessage.value = it.message ?: "No se pudo registrar"
+                }
 
             _isLoading.value = false
         }
     }
 
-    fun clearError() { _errorMessage.value = null }
+    fun clearError() {
+        _errorMessage.value = null
+    }
 }

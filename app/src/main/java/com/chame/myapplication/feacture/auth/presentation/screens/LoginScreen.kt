@@ -27,7 +27,7 @@ fun LoginScreen(
     viewModelFactory: AuthViewModelFactory,
     onNavigateToMenu: () -> Unit,
     onNavigateToAdmin: () -> Unit,
-    onNavigateToRegister: () -> Unit // ✅ NUEVO
+    onNavigateToRegister: () -> Unit
 ) {
     val viewModel: AuthViewModel = viewModel(factory = viewModelFactory)
     var showAdminDialog by remember { mutableStateOf(false) }
