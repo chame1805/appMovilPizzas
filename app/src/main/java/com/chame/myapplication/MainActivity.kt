@@ -14,7 +14,9 @@ import com.chame.myapplication.feacture.auth.di.AuthModule
 import com.chame.myapplication.feacture.register.di.RegisterModule
 import com.chame.myapplication.feactures.Admin.di.AdminModule
 import com.chame.myapplication.features.pizzeriadistrito.di.PizzeriaModule
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {

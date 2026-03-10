@@ -62,6 +62,7 @@ fun AppNavigation(
             )
         }
 
+
         // --- RUTA ADMINISTRACIÓN ---
         composable("admin") {
             val adminViewModel: AdminViewModel = viewModel(

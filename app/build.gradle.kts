@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.hilt.android)
+    alias(libs.plugins.kotlin.kapt)
 }
 
 android {
@@ -56,6 +58,8 @@ dependencies {
     implementation(libs.com.squareup.retrofit2.retrofit)        // Para conectar a Internet
     implementation(libs.com.squareup.retrofit2.converter.json)
     implementation(libs.androidx.navigation.compose)// Para leer datos JSON
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.android.compiler)
 
     // --- TESTING ---
     testImplementation(libs.junit)
@@ -65,4 +69,8 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+}
+
+kapt {
+    correctErrorTypes = true
 }
