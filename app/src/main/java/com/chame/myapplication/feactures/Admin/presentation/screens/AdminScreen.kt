@@ -14,12 +14,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.chame.myapplication.feactures.Admin.domain.entities.Pizza
 import com.chame.myapplication.feactures.Admin.presentation.viewModel.AdminViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdminScreen(viewModel: AdminViewModel) {
+fun AdminScreen(viewModel: AdminViewModel = hiltViewModel()) {
     // Observamos el estado unificado del ViewModel
     val state = viewModel.uiState
 

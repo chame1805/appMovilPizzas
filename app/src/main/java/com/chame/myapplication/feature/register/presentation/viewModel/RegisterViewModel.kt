@@ -1,38 +1,47 @@
 package com.chame.myapplication.feacture.register.presentation.viewModel
 
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.chame.myapplication.feacture.register.domain.usescases.RegisterUseCase
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class RegisterViewModel(
+data class RegisterUiState(
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null
+)
+
+@HiltViewModel
+class RegisterViewModel @Inject constructor(
     private val registerUseCase: RegisterUseCase
 ) : ViewModel() {
 
-    private val _isLoading = mutableStateOf(false)
-    val isLoading: State<Boolean> = _isLoading
-
-    private val _errorMessage = mutableStateOf<String?>(null)
-    val errorMessage: State<String?> = _errorMessage
+    private val _uiState = MutableStateFlow(RegisterUiState())
+    val uiState: StateFlow<RegisterUiState> = _uiState.asStateFlow()
 
     fun register(name: String, email: String, pass: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
-            _isLoading.value = true
-            _errorMessage.value = null
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
             registerUseCase(name, email, pass)
-                .onSuccess { onSuccess() }
-                .onFailure {
-                    _errorMessage.value = it.message ?: "No se pudo registrar"
+                .onSuccess {
+                    _uiState.update { state -> state.copy(isLoading = false) }
+                    onSuccess()
                 }
-
-            _isLoading.value = false
+                .onFailure {
+                    _uiState.update { state ->
+                        state.copy(isLoading = false, errorMessage = it.message ?: "No se pudo registrar")
+                    }
+                }
         }
     }
 
     fun clearError() {
-        _errorMessage.value = null
+        _uiState.update { it.copy(errorMessage = null) }
     }
 }

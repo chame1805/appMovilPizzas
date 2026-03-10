@@ -3,7 +3,9 @@ package com.chame.myapplication.features.pizzeriadistrito.domain.usecases
 import com.chame.myapplication.features.pizzeriadistrito.domain.entities.Pizzas
 import com.chame.myapplication.features.pizzeriadistrito.domain.repositories.PizzaRepository
 
-class GetPizzasUseCase (
+import javax.inject.Inject
+
+class GetPizzasUseCase @Inject constructor(
     private val repository: PizzaRepository
 ){
     suspend operator fun invoke(): Result<List<Pizzas>>{

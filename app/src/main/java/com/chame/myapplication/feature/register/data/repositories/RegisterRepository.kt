@@ -1,12 +1,15 @@
 package com.chame.myapplication.feacture.register.data.repositories
 
 import com.chame.myapplication.feacture.register.data.datasource.RegisterApi
+import com.chame.myapplication.feacture.register.data.datasource.mapper.toDomain
+import com.chame.myapplication.feacture.register.data.datasource.model.RegisterRequestDto
 import com.chame.myapplication.feacture.register.domain.entities.RegisteResponse
 import com.chame.myapplication.feacture.register.domain.repositories.RegisterRepository
 import retrofit2.HttpException
 import java.io.IOException
+import javax.inject.Inject
 
-class RegisterRepositoryImpl(private val api: RegisterApi) : RegisterRepository {
+class RegisterRepositoryImpl @Inject constructor(private val api: RegisterApi) : RegisterRepository {
     override suspend fun register(
         name: String,
         email: String,
@@ -14,12 +17,8 @@ class RegisterRepositoryImpl(private val api: RegisterApi) : RegisterRepository 
     ): Result<RegisteResponse> {
         return try {
             val response = api.register(
-                mapOf(
-                    "name" to name,
-                    "email" to email,
-                    "password" to password
-                )
-            )
+                RegisterRequestDto(name = name, email = email, password = password)
+            ).toDomain()
             Result.success(response)
         } catch (e: HttpException) {
             Result.failure(Exception("Error del servidor (${e.code()})"))

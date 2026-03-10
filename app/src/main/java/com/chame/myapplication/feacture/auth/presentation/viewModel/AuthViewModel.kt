@@ -1,21 +1,28 @@
 package com.chame.myapplication.feacture.auth.presentation.viewModel
 
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.chame.myapplication.feacture.auth.domian.usescases.LoginUseCase
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class AuthViewModel(
+data class AuthUiState(
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null
+)
+
+@HiltViewModel
+class AuthViewModel @Inject constructor(
     private val loginUseCase: LoginUseCase
 ) : ViewModel() {
 
-    private val _isLoading = mutableStateOf(false)
-    val isLoading: State<Boolean> = _isLoading
-
-    private val _errorMessage = mutableStateOf<String?>(null)
-    val errorMessage: State<String?> = _errorMessage
+    private val _uiState = MutableStateFlow(AuthUiState())
+    val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
     fun onLoginSuccess(navigateToMenu: () -> Unit) {
         navigateToMenu()
@@ -23,22 +30,22 @@ class AuthViewModel(
 
     fun loginAdmin(email: String, pass: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
-            _isLoading.value = true
-            _errorMessage.value = null
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
             val result = loginUseCase(email, pass)
 
             result.onSuccess {
-                _isLoading.value = false
-                onSuccess() // Navegación al éxito
+                _uiState.update { state -> state.copy(isLoading = false) }
+                onSuccess()
             }.onFailure {
-                _isLoading.value = false
-                _errorMessage.value = "Credenciales incorrectas"
+                _uiState.update { state ->
+                    state.copy(isLoading = false, errorMessage = "Credenciales incorrectas")
+                }
             }
         }
     }
 
     fun clearError() {
-        _errorMessage.value = null
+        _uiState.update { it.copy(errorMessage = null) }
     }
 }

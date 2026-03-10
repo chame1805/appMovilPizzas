@@ -1,25 +1,40 @@
 package com.chame.myapplication.feacture.register.presentation.screens
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chame.myapplication.feacture.register.presentation.viewModel.RegisterViewModel
-import com.chame.myapplication.feacture.register.presentation.viewModel.RegisterViewModelFactory
 
 @Composable
 fun RegisterScreen(
-    viewModelFactory: RegisterViewModelFactory,
     onBack: () -> Unit,
-    onSuccess: () -> Unit
+    onSuccess: () -> Unit,
+    vm: RegisterViewModel = hiltViewModel()
 ) {
-    val vm: RegisterViewModel = viewModel(factory = viewModelFactory)
+    val uiState by vm.uiState.collectAsStateWithLifecycle()
 
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -60,9 +75,9 @@ fun RegisterScreen(
                     shape = RoundedCornerShape(16.dp)
                 )
 
-                if (!vm.errorMessage.value.isNullOrBlank()) {
+                if (!uiState.errorMessage.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(10.dp))
-                    Text(vm.errorMessage.value!!, color = MaterialTheme.colorScheme.error)
+                    Text(uiState.errorMessage!!, color = MaterialTheme.colorScheme.error)
                 }
             }
         },
@@ -74,9 +89,9 @@ fun RegisterScreen(
                     }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = pizzaOrange),
-                enabled = !vm.isLoading.value
+                enabled = !uiState.isLoading
             ) {
-                if (vm.isLoading.value) {
+                if (uiState.isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
                         color = Color.White
