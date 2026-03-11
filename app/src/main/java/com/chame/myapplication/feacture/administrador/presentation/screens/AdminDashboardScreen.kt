@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExitToApp
@@ -30,6 +32,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -197,45 +200,93 @@ fun AdminDashboardScreen(
                                     }
                                 }
 
-                                Spacer(Modifier.height(16.dp))
-                                Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0xFFF0F0F0)))
-                                Spacer(Modifier.height(16.dp))
+                            }
+                        }
+                    }
 
+                    // --- PIZZAS MÁS VENDIDAS ---
+                    item {
+                        val topPizzas = state.sales
+                            .groupBy { it.pizzaName }
+                            .map { (name, orders) -> name to orders.size }
+                            .sortedByDescending { it.second }
+                            .take(5)
+
+                        val medalColors = listOf(
+                            Color(0xFFFFD700),
+                            Color(0xFFB0BEC5),
+                            Color(0xFFCD7F32),
+                            pizzaOrange.copy(alpha = 0.7f),
+                            pizzaOrange.copy(alpha = 0.45f)
+                        )
+                        val medalLabels = listOf("🥇", "🥈", "🥉", "4°", "5°")
+
+                        Card(
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            elevation = CardDefaults.cardElevation(3.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
                                 Text(
-                                    "INGRESOS POR ESTADO",
+                                    "🍕  PIZZAS MÁS VENDIDAS",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = pizzaOrange
                                 )
                                 Spacer(Modifier.height(14.dp))
 
-                                val maxRevenue = chartStatuses.maxOf {
-                                    (statusGroups[it]?.sumOf { r -> r.price } ?: 0.0).coerceAtLeast(0.01)
-                                }
-                                chartStatuses.forEach { status ->
-                                    val revenue = statusGroups[status]?.sumOf { it.price } ?: 0.0
-                                    val revFraction = (revenue / maxRevenue).toFloat().coerceIn(0f, 1f)
-                                    val barColor = statusBarColors[status] ?: Color.Gray
-                                    val label = statusLabels[status] ?: status
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(label, modifier = Modifier.width(76.dp), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.DarkGray)
-                                        Spacer(Modifier.width(8.dp))
-                                        Box(
-                                            modifier = Modifier.weight(1f).height(28.dp).background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
+                                if (topPizzas.isEmpty()) {
+                                    Text("Sin datos aún", color = Color.LightGray, fontSize = 13.sp)
+                                } else {
+                                    val maxSales = topPizzas.first().second.coerceAtLeast(1)
+                                    topPizzas.forEachIndexed { index, (name, count) ->
+                                        val fraction = count.toFloat() / maxSales
+                                        val barColor = medalColors.getOrElse(index) { pizzaOrange }
+                                        val medal = medalLabels.getOrElse(index) { "${index + 1}°" }
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+                                            verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            if (revenue > 0.0) {
-                                                Box(Modifier.fillMaxWidth(revFraction).fillMaxHeight().background(barColor, RoundedCornerShape(8.dp)))
-                                            }
                                             Text(
-                                                "$${String.format(Locale.US, "%.0f", revenue)}",
-                                                modifier = Modifier.align(Alignment.CenterEnd).padding(end = 8.dp),
-                                                fontSize = 11.sp,
-                                                color = if (revenue > 0.0 && revFraction > 0.6f) Color.White else Color.Gray,
+                                                medal,
+                                                modifier = Modifier.width(28.dp),
+                                                fontSize = 14.sp,
                                                 fontWeight = FontWeight.ExtraBold
                                             )
+                                            Spacer(Modifier.width(4.dp))
+                                            Text(
+                                                name,
+                                                modifier = Modifier.width(90.dp),
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color.DarkGray,
+                                                maxLines = 1,
+                                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                            )
+                                            Spacer(Modifier.width(8.dp))
+                                            Box(
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .height(28.dp)
+                                                    .background(Color(0xFFF0F0F0), RoundedCornerShape(8.dp))
+                                            ) {
+                                                if (count > 0) {
+                                                    Box(
+                                                        Modifier
+                                                            .fillMaxWidth(fraction)
+                                                            .fillMaxHeight()
+                                                            .background(barColor, RoundedCornerShape(8.dp))
+                                                    )
+                                                }
+                                                Text(
+                                                    "$count ventas",
+                                                    modifier = Modifier.align(Alignment.CenterEnd).padding(end = 8.dp),
+                                                    fontSize = 11.sp,
+                                                    color = if (fraction > 0.55f) Color.White else Color.Gray,
+                                                    fontWeight = FontWeight.ExtraBold
+                                                )
+                                            }
                                         }
                                     }
                                 }

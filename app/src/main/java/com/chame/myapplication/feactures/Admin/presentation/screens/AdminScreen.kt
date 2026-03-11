@@ -15,7 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.chame.myapplication.feactures.Admin.domain.entities.Pizza
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chame.myapplication.feactures.Admin.presentation.viewModel.AdminViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -24,15 +24,8 @@ fun AdminScreen(
     onBackClick: () -> Unit = {},
     viewModel: AdminViewModel = hiltViewModel()
 ) {
-    // Observamos el estado unificado del ViewModel
-    val state = viewModel.uiState
-
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val pizzaOrange = Color(0xFFE65100)
-    var showDialog by remember { mutableStateOf(false) }
-    var selectedPizza by remember { mutableStateOf<Pizza?>(null) }
-
-    var nombre by remember { mutableStateOf("") }
-    var precio by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
@@ -56,17 +49,12 @@ fun AdminScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = {
-                    selectedPizza = null
-                    nombre = ""; precio = ""
-                    showDialog = true
-                },
+                onClick = { viewModel.openCreateDialog() },
                 containerColor = pizzaOrange,
                 contentColor = Color.White
             ) { Icon(Icons.Default.Add, "Nuevo") }
         }
     ) { padding ->
-        // Usamos Box para superponer el cargando sobre la lista
         Box(modifier = Modifier.padding(padding).fillMaxSize()) {
 
             // --- LISTA DE PIZZAS ---
@@ -74,7 +62,6 @@ fun AdminScreen(
                 modifier = Modifier.fillMaxSize().padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Ahora usamos state.pizzas en lugar de viewModel.pizzas directamente
                 items(state.pizzas) { pizza ->
                     Card(
                         shape = RoundedCornerShape(20.dp),
@@ -91,13 +78,9 @@ fun AdminScreen(
                                 Text("$${pizza.precio}", color = pizzaOrange, fontWeight = FontWeight.Bold)
                             }
                             Row {
-                                IconButton(onClick = {
-                                    selectedPizza = pizza
-                                    nombre = pizza.nombre
-                                    precio = pizza.precio.toString()
-                                    showDialog = true
-                                }) { Icon(Icons.Default.Edit, "Editar", tint = Color.Gray) }
-
+                                IconButton(onClick = { viewModel.openEditDialog(pizza) }) {
+                                    Icon(Icons.Default.Edit, "Editar", tint = Color.Gray)
+                                }
                                 IconButton(onClick = { pizza.id?.let { viewModel.removePizza(it) } }) {
                                     Icon(Icons.Default.Delete, "Borrar", tint = Color.Red)
                                 }
@@ -127,22 +110,27 @@ fun AdminScreen(
         }
 
         // --- DIÁLOGO PARA CREAR/EDITAR ---
-        if (showDialog) {
+        if (state.showDialog) {
             AlertDialog(
-                onDismissRequest = { showDialog = false },
-                title = { Text(if (selectedPizza == null) "NUEVA PIZZA" else "EDITAR PIZZA", fontWeight = FontWeight.Black) },
+                onDismissRequest = { viewModel.closeDialog() },
+                title = {
+                    Text(
+                        if (state.selectedPizza == null) "NUEVA PIZZA" else "EDITAR PIZZA",
+                        fontWeight = FontWeight.Black
+                    )
+                },
                 text = {
                     Column {
                         OutlinedTextField(
-                            value = nombre,
-                            onValueChange = { nombre = it },
+                            value = state.editNombre,
+                            onValueChange = { viewModel.setEditNombre(it) },
                             label = { Text("Nombre") },
                             modifier = Modifier.fillMaxWidth()
                         )
                         Spacer(Modifier.height(8.dp))
                         OutlinedTextField(
-                            value = precio,
-                            onValueChange = { precio = it },
+                            value = state.editPrecio,
+                            onValueChange = { viewModel.setEditPrecio(it) },
                             label = { Text("Precio") },
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -151,17 +139,21 @@ fun AdminScreen(
                 confirmButton = {
                     Button(
                         onClick = {
-                            val p = precio.toDoubleOrNull() ?: 0.0
-                            if (selectedPizza == null) viewModel.addPizza(nombre, p)
-                            else selectedPizza!!.id?.let { viewModel.editPizza(it, nombre, p) }
-                            showDialog = false
+                            val p = state.editPrecio.toDoubleOrNull() ?: 0.0
+                            val pizza = state.selectedPizza
+                            if (pizza == null) {
+                                viewModel.addPizza(state.editNombre, p)
+                            } else {
+                                pizza.id?.let { viewModel.editPizza(it, state.editNombre, p) }
+                            }
+                            viewModel.closeDialog()
                         },
-                    colors = ButtonDefaults.buttonColors(containerColor = pizzaOrange),
-                        enabled = nombre.isNotBlank() && precio.isNotBlank()
+                        colors = ButtonDefaults.buttonColors(containerColor = pizzaOrange),
+                        enabled = state.editNombre.isNotBlank() && state.editPrecio.isNotBlank()
                     ) { Text("GUARDAR") }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showDialog = false }) {
+                    TextButton(onClick = { viewModel.closeDialog() }) {
                         Text("CANCELAR", color = Color.Gray)
                     }
                 }

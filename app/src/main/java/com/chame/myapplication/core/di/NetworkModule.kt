@@ -12,9 +12,14 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import com.google.gson.GsonBuilder
+import com.google.gson.JsonDeserializationContext
+import com.google.gson.JsonDeserializer
+import com.google.gson.JsonElement
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.lang.reflect.Type
 import javax.inject.Singleton
 
 @Module
@@ -42,10 +47,31 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
+        val gson = GsonBuilder()
+            .setLenient()
+            .registerTypeAdapter(Double::class.java, object : JsonDeserializer<Double> {
+                override fun deserialize(json: JsonElement, type: Type, ctx: JsonDeserializationContext): Double {
+                    return try {
+                        if (json.isJsonNull) 0.0 else json.asDouble
+                    } catch (e: Exception) {
+                        json.asString.toDoubleOrNull() ?: 0.0
+                    }
+                }
+            })
+            .registerTypeAdapter(Double::class.javaObjectType, object : JsonDeserializer<Double> {
+                override fun deserialize(json: JsonElement, type: Type, ctx: JsonDeserializationContext): Double {
+                    return try {
+                        if (json.isJsonNull) 0.0 else json.asDouble
+                    } catch (e: Exception) {
+                        json.asString.toDoubleOrNull() ?: 0.0
+                    }
+                }
+            })
+            .create()
         return Retrofit.Builder()
             .baseUrl("http://44.212.148.188:8000/")
             .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
     }
 

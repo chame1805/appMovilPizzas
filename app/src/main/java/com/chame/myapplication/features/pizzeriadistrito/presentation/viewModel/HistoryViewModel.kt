@@ -20,7 +20,11 @@ data class HistoryUiState(
     val isLoading: Boolean = false,
     val orders: List<WaiterOrder> = emptyList(),
     val error: String? = null,
-    val editError: String? = null
+    val editError: String? = null,
+    val editingOrder: WaiterOrder? = null,
+    val editClientName: String = "",
+    val editTableText: String = "",
+    val editPaidText: String = ""
 )
 
 @HiltViewModel
@@ -47,7 +51,11 @@ class HistoryViewModel @Inject constructor(
                 val enriched = apiOrders.map { order ->
                     val local = sharedOrderStore.getPayment(order.id)
                     if (local != null && order.totalPaid == 0.0) {
-                        order.copy(totalPaid = local.first, changeReturned = local.second)
+                        order.copy(
+                            price = if (order.price == 0.0) local.price else order.price,
+                            totalPaid = local.totalPaid,
+                            changeReturned = local.changeReturned
+                        )
                     } else order
                 }
                 _uiState.update { it.copy(isLoading = false, orders = enriched) }
@@ -87,6 +95,24 @@ class HistoryViewModel @Inject constructor(
             }
         }
     }
+
+    fun openEditDialog(order: WaiterOrder) {
+        _uiState.update { it.copy(
+            editingOrder = order,
+            editClientName = order.clientName,
+            editTableText = order.tableNumber.toString(),
+            editPaidText = if (order.totalPaid > 0) order.totalPaid.toString() else "",
+            editError = null
+        )}
+    }
+
+    fun closeEditDialog() {
+        _uiState.update { it.copy(editingOrder = null, editClientName = "", editTableText = "", editPaidText = "", editError = null) }
+    }
+
+    fun setEditClientName(value: String) = _uiState.update { it.copy(editClientName = value) }
+    fun setEditTableText(value: String) { if (value.all { c -> c.isDigit() }) _uiState.update { it.copy(editTableText = value) } }
+    fun setEditPaidText(value: String) { if (value.all { c -> c.isDigit() || c == '.' }) _uiState.update { it.copy(editPaidText = value) } }
 
     fun clearEditError() = _uiState.update { it.copy(editError = null) }
 

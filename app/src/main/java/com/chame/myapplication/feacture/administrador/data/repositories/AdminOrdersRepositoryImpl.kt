@@ -5,16 +5,30 @@ import com.chame.myapplication.feacture.administrador.data.datasource.AdminOrder
 import com.chame.myapplication.feacture.administrador.data.datasource.mapper.toDomain
 import com.chame.myapplication.feacture.administrador.domain.entities.SaleRecord
 import com.chame.myapplication.feacture.administrador.domain.repositories.AdminOrdersRepository
+import com.chame.myapplication.features.pizzeriadistrito.data.SharedOrderStore
 import javax.inject.Inject
 
 class AdminOrdersRepositoryImpl @Inject constructor(
     private val api: AdminOrdersApi,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val sharedOrderStore: SharedOrderStore
 ) : AdminOrdersRepository {
 
     override suspend fun getSalesHistory(): Result<List<SaleRecord>> {
         return runCatching {
-            api.getSalesHistory("Bearer ${sessionManager.token}").map { it.toDomain() }
+            api.getSalesHistory("Bearer ${sessionManager.token}").map { dto ->
+                val record = dto.toDomain()
+                val local = sharedOrderStore.getPayment(record.id)
+                if (local != null) {
+                    record.copy(
+                        price = if (record.price == 0.0) local.price else record.price,
+                        totalPaid = if (record.totalPaid == 0.0) local.totalPaid else record.totalPaid,
+                        changeReturned = if (record.changeReturned == 0.0) local.changeReturned else record.changeReturned
+                    )
+                } else {
+                    record
+                }
+            }
         }
     }
 }

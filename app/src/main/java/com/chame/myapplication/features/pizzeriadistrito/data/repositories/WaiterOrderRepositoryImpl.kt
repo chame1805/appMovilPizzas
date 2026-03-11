@@ -40,7 +40,7 @@ class WaiterOrderRepositoryImpl @Inject constructor(
                     waiterId = sessionManager.userId
                 )
             )
-            sharedOrderStore.savePayment(response.id, params.totalPaid, params.changeReturned)
+            sharedOrderStore.savePayment(response.id, params.price, params.totalPaid, params.changeReturned)
         }
     }
 
@@ -53,7 +53,8 @@ class WaiterOrderRepositoryImpl @Inject constructor(
     override suspend fun updateOrder(orderId: Int, clientName: String, tableNumber: Int, totalPaid: Double, changeReturned: Double): Result<Unit> {
         return runCatching {
             api.updateOrder(authHeader(), orderId, UpdateFullOrderRequestDto(clientName, tableNumber, totalPaid, changeReturned)).close()
-            sharedOrderStore.savePayment(orderId, totalPaid, changeReturned)
+            val prev = sharedOrderStore.getPayment(orderId)
+            sharedOrderStore.savePayment(orderId, prev?.price ?: 0.0, totalPaid, changeReturned)
         }
     }
 }

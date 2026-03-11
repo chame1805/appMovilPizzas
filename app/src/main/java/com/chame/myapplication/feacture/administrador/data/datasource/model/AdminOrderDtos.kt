@@ -5,20 +5,20 @@ import com.google.gson.annotations.SerializedName
 data class SaleRecordDto(
     @SerializedName("id")
     val id: Int,
-    @SerializedName("pizza_name")
+    @SerializedName(value = "pizza_name", alternate = ["pizzaName", "nombre_pizza"])
     val pizzaName: String,
-    @SerializedName("price")
-    val price: Double,
-    @SerializedName("client_name")
+    @SerializedName(value = "price", alternate = ["precio", "monto", "total"])
+    val price: Double?,
+    @SerializedName(value = "client_name", alternate = ["clientName", "nombre_cliente"])
     val clientName: String,
-    @SerializedName("total_paid")
-    val totalPaid: Double,
-    @SerializedName("change_returned")
-    val changeReturned: Double,
-    @SerializedName("table_number")
+    @SerializedName(value = "total_paid", alternate = ["totalPaid", "total_pagado", "pagado"])
+    val totalPaid: Double?,
+    @SerializedName(value = "change_returned", alternate = ["changeReturned", "cambio", "vuelto"])
+    val changeReturned: Double?,
+    @SerializedName(value = "table_number", alternate = ["tableNumber", "mesa"])
     val tableNumber: Int,
     @SerializedName("status")
     val status: String,
-    @SerializedName("created_at")
+    @SerializedName(value = "created_at", alternate = ["createdAt"])
     val createdAt: String
 )

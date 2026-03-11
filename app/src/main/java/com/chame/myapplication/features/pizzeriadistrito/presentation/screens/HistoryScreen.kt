@@ -25,7 +25,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.chame.myapplication.features.pizzeriadistrito.domain.entities.WaiterOrder
 import com.chame.myapplication.features.pizzeriadistrito.presentation.viewModel.HistoryViewModel
 import java.util.Locale
 
@@ -43,48 +42,43 @@ fun HistoryScreen(
     val deliveredColor = Color(0xFF757575)
     val totalSales = orders.sumOf { it.price }
 
-    var editingOrder by remember { mutableStateOf<WaiterOrder?>(null) }
-
-    // Edit dialog
-    editingOrder?.let { order ->
-        var clientName by remember(order.id) { mutableStateOf(order.clientName) }
-        var tableText by remember(order.id) { mutableStateOf(order.tableNumber.toString()) }
-        var paidText by remember(order.id) { mutableStateOf(if (order.totalPaid > 0) order.totalPaid.toString() else "") }
-        val paid = paidText.toDoubleOrNull() ?: 0.0
+    // --- DIÁLOGO DE EDICIÓN ---
+    state.editingOrder?.let { order ->
+        val paid = state.editPaidText.toDoubleOrNull() ?: 0.0
         val change = paid - order.price
         val sufficient = paid >= order.price
 
         AlertDialog(
-            onDismissRequest = { editingOrder = null },
+            onDismissRequest = { viewModel.closeEditDialog() },
             title = { Text("Editar Pedido #${order.id}", fontWeight = FontWeight.Black) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("🍕 ${order.pizzaName} — $${String.format(Locale.US, "%.2f", order.price)}", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     OutlinedTextField(
-                        value = clientName,
-                        onValueChange = { clientName = it },
+                        value = state.editClientName,
+                        onValueChange = { viewModel.setEditClientName(it) },
                         label = { Text("Nombre del cliente") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
-                        value = tableText,
-                        onValueChange = { if (it.all { c -> c.isDigit() }) tableText = it },
+                        value = state.editTableText,
+                        onValueChange = { viewModel.setEditTableText(it) },
                         label = { Text("Mesa") },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
-                        value = paidText,
-                        onValueChange = { if (it.all { c -> c.isDigit() || c == '.' }) paidText = it },
+                        value = state.editPaidText,
+                        onValueChange = { viewModel.setEditPaidText(it) },
                         label = { Text("Monto recibido") },
                         singleLine = true,
                         prefix = { Text("$ ") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         modifier = Modifier.fillMaxWidth()
                     )
-                    if (paidText.isNotEmpty()) {
+                    if (state.editPaidText.isNotEmpty()) {
                         val color = if (sufficient) successColor else Color.Red
                         Text(
                             if (sufficient) "Cambio: $${String.format(Locale.US, "%.2f", change)}"
@@ -102,16 +96,16 @@ fun HistoryScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        val table = tableText.toIntOrNull() ?: order.tableNumber
-                        viewModel.updateOrder(order.id, clientName, table, paid, change)
-                        editingOrder = null
+                        val table = state.editTableText.toIntOrNull() ?: order.tableNumber
+                        viewModel.updateOrder(order.id, state.editClientName, table, paid, change)
+                        viewModel.closeEditDialog()
                     },
-                    enabled = clientName.isNotEmpty() && sufficient,
+                    enabled = state.editClientName.isNotEmpty() && sufficient,
                     colors = ButtonDefaults.buttonColors(containerColor = pizzaOrange)
                 ) { Text("GUARDAR") }
             },
             dismissButton = {
-                TextButton(onClick = { editingOrder = null; viewModel.clearEditError() }) {
+                TextButton(onClick = { viewModel.closeEditDialog() }) {
                     Text("Cancelar")
                 }
             }
@@ -243,7 +237,7 @@ fun HistoryScreen(
                                             Row(verticalAlignment = Alignment.CenterVertically) {
                                                 if (order.status == "PENDING" || order.status == "IN_PROGRESS") {
                                                     IconButton(
-                                                        onClick = { editingOrder = order },
+                                                        onClick = { viewModel.openEditDialog(order) },
                                                         modifier = Modifier.size(28.dp)
                                                     ) {
                                                         Icon(Icons.Default.Edit, contentDescription = "Editar", tint = pizzaOrange, modifier = Modifier.size(16.dp))
