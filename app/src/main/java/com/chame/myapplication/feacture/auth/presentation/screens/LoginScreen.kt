@@ -24,6 +24,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -32,6 +33,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
+import android.content.Context
+import android.content.ContextWrapper
+import com.chame.myapplication.core.session.SessionManager
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chame.myapplication.R
@@ -43,9 +51,11 @@ fun LoginScreen(
     onNavigateToCocinero: () -> Unit,
     onNavigateToAdmin: () -> Unit,
     onNavigateToRegister: () -> Unit,
+    sessionManager: SessionManager,
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -122,6 +132,29 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(18.dp))
 
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Button(
+                onClick = {
+                    showBiometricPrompt(
+                        context = context,
+                        onSuccess = {
+                            when (sessionManager.userRole) {
+                                "COCINERO" -> onNavigateToCocinero()
+                                "ADMIN" -> onNavigateToAdmin()
+                                else -> onNavigateToMesero()
+                            }
+                        }
+                    )
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = sessionManager.biometricEnabled && sessionManager.userId > 0,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1565C0)),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Text("ENTRAR CON HUELLA / ROSTRO", fontWeight = FontWeight.Bold)
+            }
+
             TextButton(onClick = onNavigateToRegister) {
                 Text(
                     text = "¿No tienes cuenta?  Crear cuenta",
@@ -131,4 +164,37 @@ fun LoginScreen(
             }
         }
     }
+}
+
+
+private fun showBiometricPrompt(
+    context: Context,
+    onSuccess: () -> Unit
+) {
+    val activity = context.findFragmentActivity() ?: return
+    val canAuth = BiometricManager.from(activity).canAuthenticate(
+        BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL
+    )
+    if (canAuth != BiometricManager.BIOMETRIC_SUCCESS) return
+
+    val executor = ContextCompat.getMainExecutor(activity)
+    val prompt = BiometricPrompt(activity, executor, object : BiometricPrompt.AuthenticationCallback() {
+        override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+            onSuccess()
+        }
+    })
+
+    val info = BiometricPrompt.PromptInfo.Builder()
+        .setTitle("Acceso rápido")
+        .setSubtitle("Usa huella o reconocimiento facial")
+        .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL)
+        .build()
+
+    prompt.authenticate(info)
+}
+
+private tailrec fun Context.findFragmentActivity(): FragmentActivity? = when (this) {
+    is FragmentActivity -> this
+    is ContextWrapper -> baseContext.findFragmentActivity()
+    else -> null
 }

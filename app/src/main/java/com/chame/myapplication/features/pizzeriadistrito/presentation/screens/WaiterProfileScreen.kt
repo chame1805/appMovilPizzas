@@ -137,7 +137,7 @@ fun WaiterProfileScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("Seguridad", fontWeight = FontWeight.Bold)
-                    Text("Activar huella digital", style = MaterialTheme.typography.bodyMedium)
+                    Text("Activar huella / rostro", style = MaterialTheme.typography.bodyMedium)
                     Switch(
                         checked = biometricEnabled,
                         onCheckedChange = { checked ->

@@ -51,7 +51,8 @@ fun AppNavigation(
                 },
                 onNavigateToRegister = {
                     navController.navigate("register")
-                }
+                },
+                sessionManager = sessionManager
             )
         }
 
