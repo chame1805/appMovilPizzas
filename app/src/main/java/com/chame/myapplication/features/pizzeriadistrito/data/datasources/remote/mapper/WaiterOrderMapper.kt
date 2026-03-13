@@ -11,6 +11,16 @@ fun WaiterOrderDto.toDomain(): WaiterOrder = WaiterOrder(
     totalPaid = totalPaid,
     changeReturned = changeReturned,
     tableNumber = tableNumber,
-    status = status,
+    status = normalizeStatus(status),
     createdAt = createdAt
 )
+
+
+private fun normalizeStatus(status: String): String {
+    val normalized = status.trim().uppercase().replace(' ' , '_')
+    return when (normalized) {
+        "LISTA", "READY" -> "COMPLETED"
+        "PREPARANDO" -> "IN_PROGRESS"
+        else -> normalized
+    }
+}
