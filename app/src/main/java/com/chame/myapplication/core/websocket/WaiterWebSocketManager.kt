@@ -52,19 +52,32 @@ class WaiterWebSocketManager @Inject constructor(
         webSocket = okHttpClient.newWebSocket(request, object : WebSocketListener() {
             override fun onMessage(webSocket: WebSocket, text: String) {
                 val json = gson.fromJson(text, JsonObject::class.java)
-                val event = json.get("event")?.asString ?: return
-                val id = json.get("id")?.asInt ?: return
+                val event = normalizeEvent(json.get("event")?.asString.orEmpty())
+                if (event.isEmpty()) return
+
+                val id = when {
+                    json.has("id") -> json.get("id")?.asInt
+                    json.has("order_id") -> json.get("order_id")?.asInt
+                    else -> null
+                } ?: return
+
+                val rawStatus = when {
+                    json.has("status") -> json.get("status")?.asString.orEmpty()
+                    json.has("new_status") -> json.get("new_status")?.asString.orEmpty()
+                    json.has("order_status") -> json.get("order_status")?.asString.orEmpty()
+                    else -> ""
+                }
 
                 val waiterEvent = WaiterEvent(
                     event = event,
                     id = id,
                     pizzaName = json.get("pizza_name")?.asString ?: "",
                     tableNumber = json.get("table_number")?.asInt ?: 0,
-                    status = json.get("status")?.asString ?: "",
+                    status = normalizeStatus(rawStatus),
                     updatedAt = json.get("updated_at")?.asString ?: ""
                 )
                 _events.tryEmit(waiterEvent)
-                if (event == "ORDER_COMPLETED") {
+                if (normalizeStatus(rawStatus) == "COMPLETED" || event == "ORDER_COMPLETED") {
                     vibrate()
                 }
             }
@@ -78,6 +91,20 @@ class WaiterWebSocketManager @Inject constructor(
     fun disconnect() {
         webSocket?.close(1000, "Closing")
         webSocket = null
+    }
+
+
+    private fun normalizeEvent(eventName: String): String {
+        return eventName.trim().uppercase().replace(' ', '_')
+    }
+
+    private fun normalizeStatus(status: String): String {
+        val normalized = status.trim().uppercase().replace(' ', '_')
+        return when (normalized) {
+            "LISTA", "READY" -> "COMPLETED"
+            "PREPARANDO" -> "IN_PROGRESS"
+            else -> normalized
+        }
     }
 
     private fun vibrate() {

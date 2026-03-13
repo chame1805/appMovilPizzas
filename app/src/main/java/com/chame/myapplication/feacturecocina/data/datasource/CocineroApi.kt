@@ -11,7 +11,7 @@ import retrofit2.http.Path
 
 interface CocineroApi {
 
-    @GET("orders/")
+    @GET("orders/kitchen/active/")
     suspend fun getActiveOrders(
         @Header("Authorization") token: String
     ): List<KitchenOrderDto>
