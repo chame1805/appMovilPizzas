@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -45,6 +46,7 @@ import com.chame.myapplication.features.pizzeriadistrito.presentation.viewModel.
 fun PizzaMenuScreen(
     onPizzaClick: (String, Double) -> Unit,
     onHistoryClick: () -> Unit,
+    onProfileClick: () -> Unit,
     onBackClick: () -> Unit,
     viewModel: PizzaViewModel = hiltViewModel()
 ) {
@@ -89,6 +91,12 @@ fun PizzaMenuScreen(
                     actionIconContentColor = Color.White
                 ),
                 actions = {
+                    IconButton(onClick = onProfileClick) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Perfil"
+                        )
+                    }
                     IconButton(onClick = onHistoryClick) {
                         Icon(
                             imageVector = Icons.Default.DateRange,

@@ -21,6 +21,12 @@ class SessionManager @Inject constructor() {
     var userEmail: String = ""
         private set
 
+    var profilePhotoBase64: String = ""
+        private set
+
+    var biometricEnabled: Boolean = false
+        private set
+
     fun saveSession(token: String, userId: Int, name: String, role: String, email: String) {
         this.token = token
         this.userId = userId
@@ -29,7 +35,18 @@ class SessionManager @Inject constructor() {
         this.userEmail = email
     }
 
+
+    fun saveProfilePhoto(base64: String) {
+        profilePhotoBase64 = base64
+    }
+
+    fun setBiometricEnabled(enabled: Boolean) {
+        biometricEnabled = enabled
+    }
+
     fun clearSession() {
+        profilePhotoBase64 = ""
+        biometricEnabled = false
         token = ""
         userId = 0
         userName = ""
