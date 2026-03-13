@@ -14,7 +14,7 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-//esto es una prueba para el commit
+//esto es una prueba para el commitdddd
     @Inject lateinit var sessionManager: SessionManager
     @Inject lateinit var waiterWebSocketManager: WaiterWebSocketManager
 
