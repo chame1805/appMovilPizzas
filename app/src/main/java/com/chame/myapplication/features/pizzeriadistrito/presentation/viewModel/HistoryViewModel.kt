@@ -58,7 +58,8 @@ class HistoryViewModel @Inject constructor(
                         )
                     } else order
                 }
-                _uiState.update { it.copy(isLoading = false, orders = enriched) }
+                val mergedOrders = sharedOrderStore.mergeOrders(enriched)
+                _uiState.update { it.copy(isLoading = false, orders = sortForWaiter(mergedOrders)) }
             }.onFailure { e ->
                 _uiState.update { it.copy(isLoading = false, error = e.message ?: "Error al cargar pedidos") }
             }
@@ -66,10 +67,12 @@ class HistoryViewModel @Inject constructor(
     }
 
     fun markAsDelivered(orderId: Int) {
+        sharedOrderStore.updateOrderStatus(orderId, "DELIVERED")
         _uiState.update { state ->
-            state.copy(orders = state.orders.map { order ->
+            val updated = state.orders.map { order ->
                 if (order.id == orderId) order.copy(status = "DELIVERED") else order
-            })
+            }
+            state.copy(orders = sortForWaiter(updated))
         }
         viewModelScope.launch {
             markOrderDeliveredUseCase(orderId).onFailure {
@@ -83,10 +86,12 @@ class HistoryViewModel @Inject constructor(
         _uiState.update { state ->
             state.copy(
                 editError = null,
-                orders = state.orders.map { order ->
-                    if (order.id == orderId) order.copy(clientName = clientName, tableNumber = tableNumber, totalPaid = totalPaid, changeReturned = changeReturned)
-                    else order
-                }
+                orders = sortForWaiter(state.orders.map { order ->
+                    if (order.id == orderId) {
+                        order.copy(clientName = clientName, tableNumber = tableNumber, totalPaid = totalPaid, changeReturned = changeReturned)
+                            .also { sharedOrderStore.upsertOrder(it) }
+                    } else order
+                })
             )
         }
         viewModelScope.launch {
@@ -116,15 +121,51 @@ class HistoryViewModel @Inject constructor(
 
     fun clearEditError() = _uiState.update { it.copy(editError = null) }
 
+
+    private fun sortForWaiter(orders: List<WaiterOrder>): List<WaiterOrder> {
+        fun priority(status: String): Int = when (status) {
+            "COMPLETED" -> 0
+            "IN_PROGRESS" -> 1
+            "PENDING" -> 2
+            "DELIVERED" -> 3
+            else -> 4
+        }
+        return orders.sortedWith(compareBy<WaiterOrder> { priority(it.status) }.thenByDescending { it.id })
+    }
+
+    private fun resolveEventStatus(eventName: String, rawStatus: String): String {
+        val normalized = rawStatus.trim().uppercase().replace(' ', '_')
+        if (normalized.isNotEmpty()) {
+            return when (normalized) {
+                "LISTA", "READY" -> "COMPLETED"
+                "PREPARANDO" -> "IN_PROGRESS"
+                else -> normalized
+            }
+        }
+        return when (eventName) {
+            "ORDER_COMPLETED" -> "COMPLETED"
+            else -> "IN_PROGRESS"
+        }
+    }
+
     private fun collectWebSocketEvents() {
         viewModelScope.launch {
             waiterWebSocketManager.events.collect { event ->
                 if (event.event == "ORDER_STATUS_CHANGED" || event.event == "ORDER_COMPLETED") {
-                    val newStatus = event.status.ifEmpty { "COMPLETED" }
+                    val newStatus = resolveEventStatus(event.event, event.status)
+                    sharedOrderStore.updateOrderStatus(event.id, newStatus)
+                    var found = false
                     _uiState.update { state ->
-                        state.copy(orders = state.orders.map { order ->
-                            if (order.id == event.id) order.copy(status = newStatus) else order
-                        })
+                        val updated = state.orders.map { order ->
+                            if (order.id == event.id) {
+                                found = true
+                                order.copy(status = newStatus)
+                            } else order
+                        }
+                        state.copy(orders = sortForWaiter(updated))
+                    }
+                    if (!found) {
+                        loadOrders()
                     }
                 }
             }

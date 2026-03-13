@@ -54,17 +54,22 @@ class WaiterWebSocketManager @Inject constructor(
                 val json = gson.fromJson(text, JsonObject::class.java)
                 val event = json.get("event")?.asString ?: return
                 val id = json.get("id")?.asInt ?: return
+                val rawStatus = when {
+                    json.has("status") -> json.get("status")?.asString.orEmpty()
+                    json.has("new_status") -> json.get("new_status")?.asString.orEmpty()
+                    else -> ""
+                }
 
                 val waiterEvent = WaiterEvent(
                     event = event,
                     id = id,
                     pizzaName = json.get("pizza_name")?.asString ?: "",
                     tableNumber = json.get("table_number")?.asInt ?: 0,
-                    status = json.get("status")?.asString ?: "",
+                    status = rawStatus,
                     updatedAt = json.get("updated_at")?.asString ?: ""
                 )
                 _events.tryEmit(waiterEvent)
-                if (event == "ORDER_COMPLETED") {
+                if (normalizeStatus(rawStatus) == "COMPLETED" || event == "ORDER_COMPLETED") {
                     vibrate()
                 }
             }
@@ -78,6 +83,15 @@ class WaiterWebSocketManager @Inject constructor(
     fun disconnect() {
         webSocket?.close(1000, "Closing")
         webSocket = null
+    }
+
+    private fun normalizeStatus(status: String): String {
+        val normalized = status.trim().uppercase().replace(' ', '_')
+        return when (normalized) {
+            "LISTA", "READY" -> "COMPLETED"
+            "PREPARANDO" -> "IN_PROGRESS"
+            else -> normalized
+        }
     }
 
     private fun vibrate() {
