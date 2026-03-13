@@ -9,5 +9,7 @@ data class AdminUiState(
     val showDialog: Boolean = false,
     val selectedPizza: Pizza? = null,
     val editNombre: String = "",
-    val editPrecio: String = ""
+    val editPrecio: String = "",
+    val editPhotoBase64: String = "",
+    val localPhotosByName: Map<String, String> = emptyMap()
 )
