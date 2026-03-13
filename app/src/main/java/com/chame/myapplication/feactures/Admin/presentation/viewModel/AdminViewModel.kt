@@ -43,15 +43,24 @@ class AdminViewModel @Inject constructor(
     }
 
     fun openCreateDialog() {
-        _uiState.update { it.copy(showDialog = true, selectedPizza = null, editNombre = "", editPrecio = "") }
+        _uiState.update { it.copy(showDialog = true, selectedPizza = null, editNombre = "", editPrecio = "", editPhotoBase64 = "") }
     }
 
     fun openEditDialog(pizza: Pizza) {
-        _uiState.update { it.copy(showDialog = true, selectedPizza = pizza, editNombre = pizza.nombre, editPrecio = pizza.precio.toString()) }
+        val key = pizza.nombre.trim().lowercase()
+        _uiState.update {
+            it.copy(
+                showDialog = true,
+                selectedPizza = pizza,
+                editNombre = pizza.nombre,
+                editPrecio = pizza.precio.toString(),
+                editPhotoBase64 = it.localPhotosByName[key].orEmpty()
+            )
+        }
     }
 
     fun closeDialog() {
-        _uiState.update { it.copy(showDialog = false) }
+        _uiState.update { it.copy(showDialog = false, editPhotoBase64 = "") }
     }
 
     fun setEditNombre(value: String) {
@@ -62,10 +71,22 @@ class AdminViewModel @Inject constructor(
         _uiState.update { it.copy(editPrecio = value) }
     }
 
+
+    fun setEditPhotoBase64(value: String) {
+        _uiState.update { it.copy(editPhotoBase64 = value) }
+    }
+
+    private fun persistLocalPhoto(nombre: String, base64: String) {
+        if (base64.isBlank()) return
+        val key = nombre.trim().lowercase()
+        _uiState.update { it.copy(localPhotosByName = it.localPhotosByName + (key to base64)) }
+    }
+
     fun addPizza(nombre: String, precio: Double) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             createPizzaUseCase(Pizza(nombre = nombre, precio = precio)).onSuccess {
+                persistLocalPhoto(nombre, _uiState.value.editPhotoBase64)
                 loadPizzas()
             }.onFailure {
                 _uiState.update { it.copy(isLoading = false, error = "No se pudo agregar la pizza") }
@@ -77,6 +98,7 @@ class AdminViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             updatePizzaUseCase(id, Pizza(nombre = nombre, precio = precio)).onSuccess {
+                persistLocalPhoto(nombre, _uiState.value.editPhotoBase64)
                 loadPizzas()
             }.onFailure {
                 _uiState.update { it.copy(isLoading = false, error = "Error al editar") }

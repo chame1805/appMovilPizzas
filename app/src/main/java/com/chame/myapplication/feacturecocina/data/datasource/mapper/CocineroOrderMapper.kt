@@ -8,6 +8,16 @@ fun KitchenOrderDto.toDomain(): KitchenOrder = KitchenOrder(
     pizzaName = pizzaName,
     tableNumber = tableNumber,
     clientName = clientName,
-    status = status,
+    status = normalizeStatus(status),
     createdAt = createdAt
 )
+
+
+private fun normalizeStatus(status: String): String {
+    val normalized = status.trim().uppercase().replace(' ' , '_')
+    return when (normalized) {
+        "LISTA", "READY" -> "COMPLETED"
+        "PREPARANDO" -> "IN_PROGRESS"
+        else -> normalized
+    }
+}

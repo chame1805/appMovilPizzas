@@ -1,22 +1,59 @@
 package com.chame.myapplication.feactures.Admin.presentation.screens
 
-import androidx.compose.foundation.layout.*
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.util.Base64
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chame.myapplication.feactures.Admin.presentation.viewModel.AdminViewModel
+import java.io.ByteArrayOutputStream
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,6 +63,12 @@ fun AdminScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val pizzaOrange = Color(0xFFE65100)
+
+    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
+        if (bitmap != null) {
+            viewModel.setEditPhotoBase64(bitmapToBase64(bitmap))
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -56,8 +99,6 @@ fun AdminScreen(
         }
     ) { padding ->
         Box(modifier = Modifier.padding(padding).fillMaxSize()) {
-
-            // --- LISTA DE PIZZAS ---
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -68,11 +109,20 @@ fun AdminScreen(
                         colors = CardDefaults.cardColors(containerColor = Color.White),
                         elevation = CardDefaults.cardElevation(4.dp)
                     ) {
+                        val photoBitmap = decodeBase64ToBitmap(state.localPhotosByName[pizza.nombre.trim().lowercase()].orEmpty())
                         Row(
                             Modifier.padding(16.dp).fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
-                            Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
+                            if (photoBitmap != null) {
+                                Image(
+                                    bitmap = photoBitmap.asImageBitmap(),
+                                    contentDescription = "Foto pizza",
+                                    modifier = Modifier.size(54.dp)
+                                )
+                                Spacer(Modifier.size(10.dp))
+                            }
                             Column(Modifier.weight(1f)) {
                                 Text(pizza.nombre, fontWeight = FontWeight.Black, fontSize = 18.sp)
                                 Text("$${pizza.precio}", color = pizzaOrange, fontWeight = FontWeight.Bold)
@@ -90,7 +140,6 @@ fun AdminScreen(
                 }
             }
 
-            // --- INDICADOR DE CARGA ---
             if (state.isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center),
@@ -98,7 +147,6 @@ fun AdminScreen(
                 )
             }
 
-            // --- MENSAJE DE ERROR ---
             state.error?.let {
                 Text(
                     text = it,
@@ -109,7 +157,6 @@ fun AdminScreen(
             }
         }
 
-        // --- DIÁLOGO PARA CREAR/EDITAR ---
         if (state.showDialog) {
             AlertDialog(
                 onDismissRequest = { viewModel.closeDialog() },
@@ -134,17 +181,31 @@ fun AdminScreen(
                             label = { Text("Precio") },
                             modifier = Modifier.fillMaxWidth()
                         )
+                        Spacer(Modifier.height(8.dp))
+                        Button(onClick = { cameraLauncher.launch(null) }) {
+                            Icon(Icons.Default.CameraAlt, contentDescription = null)
+                            Spacer(Modifier.size(8.dp))
+                            Text("Tomar foto local")
+                        }
+                        val preview = decodeBase64ToBitmap(state.editPhotoBase64)
+                        if (preview != null) {
+                            Spacer(Modifier.height(8.dp))
+                            Image(
+                                bitmap = preview.asImageBitmap(),
+                                contentDescription = "Preview",
+                                modifier = Modifier.fillMaxWidth().height(120.dp)
+                            )
+                        }
                     }
                 },
                 confirmButton = {
                     Button(
                         onClick = {
                             val p = state.editPrecio.toDoubleOrNull() ?: 0.0
-                            val pizza = state.selectedPizza
-                            if (pizza == null) {
+                            if (state.selectedPizza == null) {
                                 viewModel.addPizza(state.editNombre, p)
                             } else {
-                                pizza.id?.let { viewModel.editPizza(it, state.editNombre, p) }
+                                state.selectedPizza?.id?.let { viewModel.editPizza(it, state.editNombre, p) }
                             }
                             viewModel.closeDialog()
                         },
@@ -160,4 +221,18 @@ fun AdminScreen(
             )
         }
     }
+}
+
+private fun bitmapToBase64(bitmap: Bitmap): String {
+    val out = ByteArrayOutputStream()
+    bitmap.compress(Bitmap.CompressFormat.JPEG, 80, out)
+    return Base64.encodeToString(out.toByteArray(), Base64.DEFAULT)
+}
+
+private fun decodeBase64ToBitmap(base64: String): Bitmap? {
+    if (base64.isBlank()) return null
+    return runCatching {
+        val bytes = Base64.decode(base64, Base64.DEFAULT)
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+    }.getOrNull()
 }
