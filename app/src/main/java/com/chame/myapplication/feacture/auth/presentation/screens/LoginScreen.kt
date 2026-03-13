@@ -1,5 +1,9 @@
 package com.chame.myapplication.feacture.auth.presentation.screens
 
+import android.content.Context
+import android.content.ContextWrapper
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -10,7 +14,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -28,21 +35,18 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.biometric.BiometricManager
-import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
-import android.content.Context
-import android.content.ContextWrapper
-import com.chame.myapplication.core.session.SessionManager
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chame.myapplication.R
+import com.chame.myapplication.core.session.SessionManager
 import com.chame.myapplication.feacture.auth.presentation.viewModel.AuthViewModel
 
 @Composable
@@ -126,11 +130,36 @@ fun LoginScreen(
                 if (uiState.isLoading) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
                 } else {
-                    Text("INICIAR SESIÓN", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
+                    Text("INICIAR SESIÓN", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
                 }
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Button(
+                onClick = {
+                    showBiometricPrompt(
+                        context = context,
+                        onSuccess = {
+                            when (sessionManager.userRole) {
+                                "COCINERO" -> onNavigateToCocinero()
+                                "ADMIN" -> onNavigateToAdmin()
+                                else -> onNavigateToMesero()
+                            }
+                        }
+                    )
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = sessionManager.biometricEnabled && sessionManager.userId > 0,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1565C0)),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                androidx.compose.material3.Icon(Icons.Default.Fingerprint, contentDescription = null, tint = Color.White)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("ENTRAR CON HUELLA / ROSTRO", fontWeight = FontWeight.Bold, color = Color.White)
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
 
             Spacer(modifier = Modifier.height(10.dp))
 
@@ -165,7 +194,6 @@ fun LoginScreen(
         }
     }
 }
-
 
 private fun showBiometricPrompt(
     context: Context,

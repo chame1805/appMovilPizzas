@@ -22,6 +22,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -135,9 +137,36 @@ fun WaiterProfileScreen(
                 tonalElevation = 2.dp,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("Seguridad", fontWeight = FontWeight.Bold)
-                    Text("Activar huella / rostro", style = MaterialTheme.typography.bodyMedium)
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("Seguridad", fontWeight = FontWeight.Bold, color = Color(0xFF212121))
+                    Text("Activar huella / rostro", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF424242))
+
+                    Icon(
+                        Icons.Default.Face,
+                        contentDescription = "Rostro",
+                        tint = Color(0xFF1565C0),
+                        modifier = Modifier.size(34.dp)
+                    )
+
+                    Surface(
+                        shape = CircleShape,
+                        color = Color(0xFFE3F2FD),
+                        modifier = Modifier.size(64.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                Icons.Default.Fingerprint,
+                                contentDescription = "Huella",
+                                tint = Color(0xFF1565C0),
+                                modifier = Modifier.size(36.dp)
+                            )
+                        }
+                    }
+
                     Switch(
                         checked = biometricEnabled,
                         onCheckedChange = { checked ->
