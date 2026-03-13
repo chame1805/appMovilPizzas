@@ -31,6 +31,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -159,6 +160,29 @@ fun LoginScreen(
             }
 
             Spacer(modifier = Modifier.height(10.dp))
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Button(
+                onClick = {
+                    showBiometricPrompt(
+                        context = context,
+                        onSuccess = {
+                            when (sessionManager.userRole) {
+                                "COCINERO" -> onNavigateToCocinero()
+                                "ADMIN" -> onNavigateToAdmin()
+                                else -> onNavigateToMesero()
+                            }
+                        }
+                    )
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = sessionManager.biometricEnabled && sessionManager.userId > 0,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1565C0)),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Text("ENTRAR CON HUELLA / ROSTRO", fontWeight = FontWeight.Bold)
+            }
 
             TextButton(onClick = onNavigateToRegister) {
                 Text(
