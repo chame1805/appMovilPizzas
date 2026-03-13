@@ -71,6 +71,7 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     implementation(libs.androidx.hilt.navigation.compose)
+    implementation("androidx.biometric:biometric:1.2.0-alpha05")
     implementation(libs.hilt.android)
     kapt(libs.hilt.android.compiler)
 }

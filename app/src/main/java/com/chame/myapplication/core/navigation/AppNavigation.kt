@@ -19,6 +19,7 @@ import com.chame.myapplication.feactures.Admin.presentation.screens.AdminScreen
 import com.chame.myapplication.features.pizzeriadistrito.presentation.screens.HistoryScreen
 import com.chame.myapplication.features.pizzeriadistrito.presentation.screens.OrderScreen
 import com.chame.myapplication.features.pizzeriadistrito.presentation.screens.PizzaMenuScreen
+import com.chame.myapplication.features.pizzeriadistrito.presentation.screens.WaiterProfileScreen
 
 @Composable
 fun AppNavigation(
@@ -50,7 +51,8 @@ fun AppNavigation(
                 },
                 onNavigateToRegister = {
                     navController.navigate("register")
-                }
+                },
+                sessionManager = sessionManager
             )
         }
 
@@ -113,6 +115,7 @@ fun AppNavigation(
             PizzaMenuScreen(
                 onPizzaClick = { name, price -> navController.navigate("order/$name/$price") },
                 onHistoryClick = { navController.navigate("history") },
+                onProfileClick = { navController.navigate("waiter_profile") },
                 onBackClick = {
                     waiterWebSocketManager.disconnect()
                     sessionManager.clearSession()
@@ -146,6 +149,14 @@ fun AppNavigation(
 
         composable("history") {
             HistoryScreen(onBackClick = { navController.popBackStack() })
+        }
+
+
+        composable("waiter_profile") {
+            WaiterProfileScreen(
+                sessionManager = sessionManager,
+                onBackClick = { navController.popBackStack() }
+            )
         }
     }
 }
