@@ -14,9 +14,15 @@ class AdminOrdersRepositoryImpl @Inject constructor(
     private val sharedOrderStore: SharedOrderStore
 ) : AdminOrdersRepository {
 
+    private suspend fun fetchSalesHistory(token: String) =
+        runCatching { api.getSalesHistoryV2(token) }
+            .recoverCatching { api.getSalesHistoryV1(token) }
+            .recoverCatching { api.getSalesHistoryLegacy(token) }
+            .getOrThrow()
+
     override suspend fun getSalesHistory(): Result<List<SaleRecord>> {
         return runCatching {
-            api.getSalesHistory("Bearer ${sessionManager.token}").map { dto ->
+            fetchSalesHistory("Bearer ${sessionManager.token}").map { dto ->
                 val record = dto.toDomain()
                 val local = sharedOrderStore.getPayment(record.id)
                 if (local != null) {
