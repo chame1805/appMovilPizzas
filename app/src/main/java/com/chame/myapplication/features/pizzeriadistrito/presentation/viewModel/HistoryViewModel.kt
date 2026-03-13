@@ -144,14 +144,16 @@ class HistoryViewModel @Inject constructor(
         }
         return when (eventName) {
             "ORDER_COMPLETED" -> "COMPLETED"
-            else -> "IN_PROGRESS"
+            "ORDER_STATUS_CHANGED", "ORDER_UPDATED" -> "IN_PROGRESS"
+            else -> "PENDING"
         }
     }
 
     private fun collectWebSocketEvents() {
         viewModelScope.launch {
             waiterWebSocketManager.events.collect { event ->
-                if (event.event == "ORDER_STATUS_CHANGED" || event.event == "ORDER_COMPLETED") {
+                val isStatusEvent = event.event in setOf("ORDER_STATUS_CHANGED", "ORDER_COMPLETED", "ORDER_UPDATED")
+                if (isStatusEvent) {
                     val newStatus = resolveEventStatus(event.event, event.status)
                     sharedOrderStore.updateOrderStatus(event.id, newStatus)
                     var found = false
