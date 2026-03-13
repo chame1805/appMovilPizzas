@@ -58,7 +58,8 @@ class HistoryViewModel @Inject constructor(
                         )
                     } else order
                 }
-                _uiState.update { it.copy(isLoading = false, orders = enriched) }
+                val mergedOrders = sharedOrderStore.mergeOrders(enriched)
+                _uiState.update { it.copy(isLoading = false, orders = mergedOrders) }
             }.onFailure { e ->
                 _uiState.update { it.copy(isLoading = false, error = e.message ?: "Error al cargar pedidos") }
             }
@@ -66,6 +67,7 @@ class HistoryViewModel @Inject constructor(
     }
 
     fun markAsDelivered(orderId: Int) {
+        sharedOrderStore.updateOrderStatus(orderId, "DELIVERED")
         _uiState.update { state ->
             state.copy(orders = state.orders.map { order ->
                 if (order.id == orderId) order.copy(status = "DELIVERED") else order
@@ -84,8 +86,10 @@ class HistoryViewModel @Inject constructor(
             state.copy(
                 editError = null,
                 orders = state.orders.map { order ->
-                    if (order.id == orderId) order.copy(clientName = clientName, tableNumber = tableNumber, totalPaid = totalPaid, changeReturned = changeReturned)
-                    else order
+                    if (order.id == orderId) {
+                        order.copy(clientName = clientName, tableNumber = tableNumber, totalPaid = totalPaid, changeReturned = changeReturned)
+                            .also { sharedOrderStore.upsertOrder(it) }
+                    } else order
                 }
             )
         }
@@ -121,6 +125,7 @@ class HistoryViewModel @Inject constructor(
             waiterWebSocketManager.events.collect { event ->
                 if (event.event == "ORDER_STATUS_CHANGED" || event.event == "ORDER_COMPLETED") {
                     val newStatus = event.status.ifEmpty { "COMPLETED" }
+                    sharedOrderStore.updateOrderStatus(event.id, newStatus)
                     _uiState.update { state ->
                         state.copy(orders = state.orders.map { order ->
                             if (order.id == event.id) order.copy(status = newStatus) else order
