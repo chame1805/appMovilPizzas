@@ -1,0 +1,98 @@
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.hilt.android)
+    alias(libs.plugins.kotlin.kapt)
+    alias(libs.plugins.google.gms.services)
+}
+
+android {
+    namespace = "com.chame.myapplication"
+    compileSdk = 35 // Te sugiero bajarlo a 35 si el 36 te da problemas (36 es Beta), pero puedes dejar 36.
+
+    defaultConfig {
+        applicationId = "com.chame.myapplication"
+        minSdk = 24
+        targetSdk = 35
+        versionCode = 1
+        versionName = "1.0"
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+    kotlinOptions {
+        jvmTarget = "11"
+    }
+    buildFeatures {
+        compose = true
+    }
+}
+
+dependencies {
+    // --- LIBRERÍAS BÁSICAS DE ANDROID ---
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.activity.compose)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.compose.material3)
+
+    // --- LIBRERÍAS QUE TE FALTABAN (VITALES PARA TU PROYECTO) ---
+    implementation(libs.androidx.lifecycle.viewmodel.compose)   // Para usar viewModel()
+    implementation(libs.io.coil.kt.coil.compose)                // Para cargar imágenes (AsyncImage)
+    implementation(libs.com.squareup.retrofit2.retrofit)        // Para conectar a Internet
+    implementation(libs.com.squareup.retrofit2.converter.json)
+    implementation(libs.com.squareup.okhttp3)
+    implementation(libs.androidx.navigation.compose)// Para leer datos JSON
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.android.compiler)
+
+    // --- TESTING ---
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.tooling)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
+    implementation(libs.androidx.hilt.navigation.compose)
+    implementation("androidx.compose.material:material-icons-extended")
+    implementation("androidx.biometric:biometric:1.2.0-alpha05")
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
+
+    // --- ROOM DATABASE ---
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    kapt(libs.room.compiler)
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.android.compiler)
+
+    // --- WORKMANAGER (Background Sync) ---
+    implementation(libs.work.runtime.ktx)
+    implementation(libs.hilt.work)
+    kapt(libs.hilt.compiler)
+
+    // --- LOCATION SERVICES (GPS) ---
+    implementation(libs.play.services.location)
+}
+
+kapt {
+    correctErrorTypes = true
+}
