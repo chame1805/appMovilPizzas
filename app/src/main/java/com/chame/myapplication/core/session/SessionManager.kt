@@ -27,6 +27,13 @@ class SessionManager @Inject constructor() {
     var biometricEnabled: Boolean = false
         private set
 
+    var fcmToken: String = ""
+        private set
+
+    fun saveFcmToken(token: String) {
+        fcmToken = token
+    }
+
     fun saveSession(token: String, userId: Int, name: String, role: String, email: String) {
         this.token = token
         this.userId = userId

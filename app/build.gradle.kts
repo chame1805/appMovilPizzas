@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.kotlin.kapt)
+    alias(libs.plugins.google.gms.services)
 }
 
 android {
@@ -71,7 +72,15 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     implementation(libs.androidx.hilt.navigation.compose)
+    implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
+
+    // --- ROOM DATABASE ---
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    kapt(libs.room.compiler)
     implementation(libs.hilt.android)
     kapt(libs.hilt.android.compiler)
 }

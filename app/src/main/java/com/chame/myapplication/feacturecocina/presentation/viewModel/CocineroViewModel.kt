@@ -1,13 +1,16 @@
 package com.chame.myapplication.feacturecocina.presentation.viewModel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.chame.myapplication.core.service.KitchenOrderForegroundService
 import com.chame.myapplication.core.websocket.KitchenWebSocketManager
 import com.chame.myapplication.feacturecocina.domain.entities.KitchenOrder
 import com.chame.myapplication.feacturecocina.domain.usescases.GetActiveOrdersUseCase
 import com.chame.myapplication.feacturecocina.domain.usescases.UpdateOrderStatusUseCase
 import com.chame.myapplication.feacturecocina.presentation.screens.CocineroUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,7 +22,8 @@ import kotlinx.coroutines.launch
 class CocineroViewModel @Inject constructor(
     private val getActiveOrdersUseCase: GetActiveOrdersUseCase,
     private val updateOrderStatusUseCase: UpdateOrderStatusUseCase,
-    private val kitchenWebSocketManager: KitchenWebSocketManager
+    private val kitchenWebSocketManager: KitchenWebSocketManager,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CocineroUiState())
@@ -27,7 +31,9 @@ class CocineroViewModel @Inject constructor(
 
     init {
         loadOrders()
-        connectWebSocket()
+        // El servicio maneja la conexión WebSocket en segundo plano
+        KitchenOrderForegroundService.start(context)
+        collectWebSocketEvents()
     }
 
     fun loadOrders() {
@@ -44,8 +50,7 @@ class CocineroViewModel @Inject constructor(
         }
     }
 
-    private fun connectWebSocket() {
-        kitchenWebSocketManager.connect()
+    private fun collectWebSocketEvents() {
         viewModelScope.launch {
             kitchenWebSocketManager.events.collect { event ->
                 when (event.event) {
@@ -113,6 +118,6 @@ class CocineroViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-        kitchenWebSocketManager.disconnect()
+        KitchenOrderForegroundService.stop(context)
     }
 }

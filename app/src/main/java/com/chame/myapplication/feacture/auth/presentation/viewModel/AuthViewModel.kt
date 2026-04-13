@@ -2,7 +2,9 @@ package com.chame.myapplication.feacture.auth.presentation.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.chame.myapplication.core.session.SessionManager
 import com.chame.myapplication.feacture.auth.domian.usescases.LoginUseCase
+import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +20,8 @@ data class AuthUiState(
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val loginUseCase: LoginUseCase
+    private val loginUseCase: LoginUseCase,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUiState())
@@ -38,6 +41,10 @@ class AuthViewModel @Inject constructor(
 
             result.onSuccess { response ->
                 _uiState.update { state -> state.copy(isLoading = false) }
+                // Guardar token FCM en SessionManager para uso posterior
+                FirebaseMessaging.getInstance().token.addOnSuccessListener { fcmToken ->
+                    sessionManager.saveFcmToken(fcmToken)
+                }
                 when (response.rol) {
                     "COCINERO" -> onCocinero()
                     "ADMIN" -> onAdmin()
