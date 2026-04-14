@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,9 +20,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -34,7 +38,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -44,14 +52,26 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chame.myapplication.feacturecocina.presentation.viewModel.CocineroViewModel
+import kotlinx.coroutines.delay
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CocineroScreen(
     onBackClick: () -> Unit,
+    onProfileClick: () -> Unit,
     viewModel: CocineroViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    var currentTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(60_000)
+            currentTime = System.currentTimeMillis()
+        }
+    }
 
     val pizzaOrange = Color(0xFFE65100)
     val pendingYellow = Color(0xFFF9A825)
@@ -76,6 +96,9 @@ fun CocineroScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onProfileClick) {
+                        Icon(Icons.Default.Person, contentDescription = "Perfil", tint = Color.White)
+                    }
                     IconButton(onClick = { viewModel.loadOrders() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refrescar", tint = Color.White)
                     }
@@ -91,7 +114,7 @@ fun CocineroScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(Color(0xFFF5F5F5))
+                .background(MaterialTheme.colorScheme.background)
         ) {
             when {
                 state.isLoading && state.orders.isEmpty() -> {
@@ -126,10 +149,11 @@ fun CocineroScreen(
                                 else -> Color.Gray
                             }
                             val nextStatus = viewModel.getNextStatus(order.status)
+                            val elapsed = elapsedTime(order.createdAt, currentTime)
 
                             Card(
                                 shape = RoundedCornerShape(20.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 elevation = CardDefaults.cardElevation(4.dp)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
@@ -151,17 +175,41 @@ fun CocineroScreen(
                                                 fontSize = 16.sp
                                             )
                                         }
-                                        Surface(
-                                            color = statusColor.copy(alpha = 0.15f),
-                                            shape = RoundedCornerShape(8.dp)
-                                        ) {
-                                            Text(
-                                                viewModel.getStatusLabel(order.status),
-                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                                color = statusColor,
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 12.sp
-                                            )
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            if (elapsed.isNotBlank()) {
+                                                Icon(
+                                                    Icons.Default.Timer,
+                                                    contentDescription = null,
+                                                    tint = when {
+                                                        isUrgent(order.createdAt, currentTime) -> Color.Red
+                                                        else -> Color.Gray
+                                                    },
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                                Spacer(Modifier.width(3.dp))
+                                                Text(
+                                                    elapsed,
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = when {
+                                                        isUrgent(order.createdAt, currentTime) -> Color.Red
+                                                        else -> Color.Gray
+                                                    }
+                                                )
+                                                Spacer(Modifier.width(8.dp))
+                                            }
+                                            Surface(
+                                                color = statusColor.copy(alpha = 0.15f),
+                                                shape = RoundedCornerShape(8.dp)
+                                            ) {
+                                                Text(
+                                                    viewModel.getStatusLabel(order.status),
+                                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                                    color = statusColor,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 12.sp
+                                                )
+                                            }
                                         }
                                     }
 
@@ -210,4 +258,27 @@ fun CocineroScreen(
             }
         }
     }
+}
+
+private fun elapsedTime(createdAt: String, currentTime: Long): String {
+    if (createdAt.isBlank()) return ""
+    return runCatching {
+        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+        val date = sdf.parse(createdAt) ?: return ""
+        val mins = (currentTime - date.time) / 60_000
+        when {
+            mins < 1 -> "< 1 min"
+            mins < 60 -> "${mins} min"
+            else -> "${mins / 60}h ${mins % 60}min"
+        }
+    }.getOrDefault("")
+}
+
+private fun isUrgent(createdAt: String, currentTime: Long): Boolean {
+    if (createdAt.isBlank()) return false
+    return runCatching {
+        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+        val date = sdf.parse(createdAt) ?: return false
+        (currentTime - date.time) / 60_000 >= 15
+    }.getOrDefault(false)
 }

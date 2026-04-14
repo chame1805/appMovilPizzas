@@ -1,6 +1,7 @@
 package com.chame.myapplication.core.di
 
 import com.chame.myapplication.core.network.PizzeriaApi
+import com.chame.myapplication.core.network.WaiterLocationApi
 import com.chame.myapplication.core.session.SessionManager
 import com.chame.myapplication.feacture.administrador.data.datasource.AdminOrdersApi
 import com.chame.myapplication.feacture.auth.data.datasource.AuthApi
@@ -102,4 +103,8 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideWaiterOrderApi(retrofit: Retrofit): WaiterOrderApi = retrofit.create(WaiterOrderApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideWaiterLocationApi(retrofit: Retrofit): WaiterLocationApi = retrofit.create(WaiterLocationApi::class.java)
 }

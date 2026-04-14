@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Person
@@ -36,6 +38,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -67,6 +71,19 @@ fun WaiterProfileScreen(
 
     var profileBitmap by remember { mutableStateOf(base64ToBitmap(sessionManager.profilePhotoBase64)) }
     var biometricEnabled by remember { mutableStateOf(sessionManager.biometricEnabled) }
+    var darkMode by remember { mutableStateOf(sessionManager.isDarkMode) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    if (errorMessage != null) {
+        AlertDialog(
+            onDismissRequest = { errorMessage = null },
+            title = { Text("Biometria no disponible") },
+            text = { Text(errorMessage!!) },
+            confirmButton = {
+                TextButton(onClick = { errorMessage = null }) { Text("Entendido") }
+            }
+        )
+    }
 
     val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
         if (bitmap != null) {
@@ -76,7 +93,7 @@ fun WaiterProfileScreen(
     }
 
     Scaffold(
-        containerColor = Color(0xFFF5F5F5),
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("MI PERFIL", fontWeight = FontWeight.Black) },
@@ -103,7 +120,7 @@ fun WaiterProfileScreen(
             Surface(
                 modifier = Modifier.size(130.dp),
                 shape = CircleShape,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.surface,
                 shadowElevation = 6.dp
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -133,7 +150,7 @@ fun WaiterProfileScreen(
 
             Surface(
                 shape = RoundedCornerShape(16.dp),
-                color = Color.White,
+                color = MaterialTheme.colorScheme.surface,
                 tonalElevation = 2.dp,
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -180,12 +197,41 @@ fun WaiterProfileScreen(
                                         biometricEnabled = true
                                         sessionManager.setBiometricEnabled(true)
                                     },
-                                    onFailure = {
+                                    onFailure = { reason ->
                                         biometricEnabled = false
                                         sessionManager.setBiometricEnabled(false)
+                                        errorMessage = reason
                                     }
                                 )
                             }
+                        }
+                    )
+                }
+            }
+
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 2.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(Icons.Default.DarkMode, contentDescription = null, tint = pizzaOrange)
+                        Text("Modo oscuro", fontWeight = FontWeight.SemiBold)
+                    }
+                    Switch(
+                        checked = darkMode,
+                        onCheckedChange = { enabled ->
+                            darkMode = enabled
+                            sessionManager.setDarkMode(enabled)
                         }
                     )
                 }
@@ -227,17 +273,34 @@ private fun base64ToBitmap(base64: String): Bitmap? {
 private fun showBiometricPrompt(
     context: Context,
     onSuccess: () -> Unit,
-    onFailure: () -> Unit
+    onFailure: (String) -> Unit
 ) {
     val activity = context.findFragmentActivity() ?: run {
-        onFailure(); return
+        onFailure("No se pudo acceder a la actividad."); return
     }
 
-    val canAuth = BiometricManager.from(activity).canAuthenticate(
-        BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL
-    )
-    if (canAuth != BiometricManager.BIOMETRIC_SUCCESS) {
-        onFailure()
+    val manager = BiometricManager.from(activity)
+
+    // Intenta primero BIOMETRIC_STRONG, si no BIOMETRIC_WEAK
+    val authenticators = when {
+        manager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS ->
+            BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL
+        manager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_WEAK) == BiometricManager.BIOMETRIC_SUCCESS ->
+            BiometricManager.Authenticators.BIOMETRIC_WEAK or BiometricManager.Authenticators.DEVICE_CREDENTIAL
+        else -> null
+    }
+
+    if (authenticators == null) {
+        val reason = when (manager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_WEAK)) {
+            BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED ->
+                "No tienes huellas registradas. Ve a Ajustes > Seguridad > Huella digital para agregar una."
+            BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE ->
+                "Este dispositivo no tiene sensor biometrico."
+            BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE ->
+                "El sensor biometrico no esta disponible en este momento."
+            else -> "No se puede usar biometria en este dispositivo."
+        }
+        onFailure(reason)
         return
     }
 
@@ -248,18 +311,22 @@ private fun showBiometricPrompt(
         }
 
         override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-            onFailure()
+            if (errorCode != BiometricPrompt.ERROR_USER_CANCELED && errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON) {
+                onFailure("Error: $errString")
+            } else {
+                onFailure("")
+            }
         }
 
         override fun onAuthenticationFailed() {
-            onFailure()
+            // huella no reconocida — el prompt sigue abierto, no llamamos onFailure
         }
     })
 
     val promptInfo = BiometricPrompt.PromptInfo.Builder()
-        .setTitle("Activar acceso biométrico")
-        .setSubtitle("Confirma tu huella para activar")
-        .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL)
+        .setTitle("Activar acceso biometrico")
+        .setSubtitle("Confirma tu huella o rostro para activar")
+        .setAllowedAuthenticators(authenticators)
         .build()
 
     prompt.authenticate(promptInfo)

@@ -34,4 +34,22 @@ class AdminDashboardViewModel @Inject constructor(
             }
         }
     }
+
+    fun setFilterStatus(status: String?) {
+        _uiState.update { it.copy(filterStatus = status) }
+    }
+
+    fun setSearchQuery(query: String) {
+        _uiState.update { it.copy(searchQuery = query) }
+    }
+
+    fun exportCsv(): String {
+        val sales = _uiState.value.sales
+        val sb = StringBuilder()
+        sb.appendLine("ID,Pizza,Cliente,Mesa,Precio,Total Pagado,Cambio,Estado,Fecha")
+        sales.forEach { s ->
+            sb.appendLine("${s.id},\"${s.pizzaName}\",\"${s.clientName}\",${s.tableNumber},${s.price},${s.totalPaid},${s.changeReturned},${s.status},${s.createdAt}")
+        }
+        return sb.toString()
+    }
 }

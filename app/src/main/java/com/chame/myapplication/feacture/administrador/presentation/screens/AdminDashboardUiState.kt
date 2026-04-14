@@ -5,5 +5,7 @@ import com.chame.myapplication.feacture.administrador.domain.entities.SaleRecord
 data class AdminDashboardUiState(
     val isLoading: Boolean = false,
     val sales: List<SaleRecord> = emptyList(),
-    val error: String? = null
+    val error: String? = null,
+    val filterStatus: String? = null,
+    val searchQuery: String = ""
 )

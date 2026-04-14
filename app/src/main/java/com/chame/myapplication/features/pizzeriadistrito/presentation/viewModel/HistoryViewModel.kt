@@ -24,7 +24,8 @@ data class HistoryUiState(
     val editingOrder: WaiterOrder? = null,
     val editClientName: String = "",
     val editTableText: String = "",
-    val editPaidText: String = ""
+    val editPaidText: String = "",
+    val searchQuery: String = ""
 )
 
 @HiltViewModel
@@ -120,6 +121,8 @@ class HistoryViewModel @Inject constructor(
     fun setEditPaidText(value: String) { if (value.all { c -> c.isDigit() || c == '.' }) _uiState.update { it.copy(editPaidText = value) } }
 
     fun clearEditError() = _uiState.update { it.copy(editError = null) }
+
+    fun setSearchQuery(query: String) = _uiState.update { it.copy(searchQuery = query) }
 
 
     private fun sortForWaiter(orders: List<WaiterOrder>): List<WaiterOrder> {

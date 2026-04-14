@@ -162,27 +162,6 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            Button(
-                onClick = {
-                    showBiometricPrompt(
-                        context = context,
-                        onSuccess = {
-                            when (sessionManager.userRole) {
-                                "COCINERO" -> onNavigateToCocinero()
-                                "ADMIN" -> onNavigateToAdmin()
-                                else -> onNavigateToMesero()
-                            }
-                        }
-                    )
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = sessionManager.biometricEnabled && sessionManager.userId > 0,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1565C0)),
-                shape = RoundedCornerShape(14.dp)
-            ) {
-                Text("ENTRAR CON HUELLA / ROSTRO", fontWeight = FontWeight.Bold)
-            }
-
             TextButton(onClick = onNavigateToRegister) {
                 Text(
                     text = "¿No tienes cuenta?  Crear cuenta",
@@ -199,10 +178,15 @@ private fun showBiometricPrompt(
     onSuccess: () -> Unit
 ) {
     val activity = context.findFragmentActivity() ?: return
-    val canAuth = BiometricManager.from(activity).canAuthenticate(
-        BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL
-    )
-    if (canAuth != BiometricManager.BIOMETRIC_SUCCESS) return
+
+    val manager = BiometricManager.from(activity)
+    val authenticators = when {
+        manager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS ->
+            BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL
+        manager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_WEAK) == BiometricManager.BIOMETRIC_SUCCESS ->
+            BiometricManager.Authenticators.BIOMETRIC_WEAK or BiometricManager.Authenticators.DEVICE_CREDENTIAL
+        else -> return
+    }
 
     val executor = ContextCompat.getMainExecutor(activity)
     val prompt = BiometricPrompt(activity, executor, object : BiometricPrompt.AuthenticationCallback() {
@@ -212,9 +196,9 @@ private fun showBiometricPrompt(
     })
 
     val info = BiometricPrompt.PromptInfo.Builder()
-        .setTitle("Acceso rápido")
+        .setTitle("Acceso rapido")
         .setSubtitle("Usa huella o reconocimiento facial")
-        .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL)
+        .setAllowedAuthenticators(authenticators)
         .build()
 
     prompt.authenticate(info)

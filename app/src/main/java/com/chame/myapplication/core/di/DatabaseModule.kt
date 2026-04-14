@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.chame.myapplication.core.database.PizzaDatabase
 import com.chame.myapplication.core.database.dao.OrderDao
+import com.chame.myapplication.core.database.dao.WaiterLocationDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -19,10 +20,14 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): PizzaDatabase =
         Room.databaseBuilder(context, PizzaDatabase::class.java, "pizza_db")
-            .fallbackToDestructiveMigration()
+            .addMigrations(PizzaDatabase.MIGRATION_1_2)
             .build()
 
     @Provides
     @Singleton
     fun provideOrderDao(db: PizzaDatabase): OrderDao = db.orderDao()
+
+    @Provides
+    @Singleton
+    fun provideWaiterLocationDao(db: PizzaDatabase): WaiterLocationDao = db.waiterLocationDao()
 }

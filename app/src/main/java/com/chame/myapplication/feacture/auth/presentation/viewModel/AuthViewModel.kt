@@ -2,6 +2,7 @@ package com.chame.myapplication.feacture.auth.presentation.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.chame.myapplication.core.notifications.PizzaFirebaseMessagingService
 import com.chame.myapplication.core.session.SessionManager
 import com.chame.myapplication.feacture.auth.domian.usescases.LoginUseCase
 import com.google.firebase.messaging.FirebaseMessaging
@@ -41,10 +42,11 @@ class AuthViewModel @Inject constructor(
 
             result.onSuccess { response ->
                 _uiState.update { state -> state.copy(isLoading = false) }
-                // Guardar token FCM en SessionManager para uso posterior
+                // Guardar token FCM y suscribir a topics
                 FirebaseMessaging.getInstance().token.addOnSuccessListener { fcmToken ->
                     sessionManager.saveFcmToken(fcmToken)
                 }
+                PizzaFirebaseMessagingService().subscribeToTopics()
                 when (response.rol) {
                     "COCINERO" -> onCocinero()
                     "ADMIN" -> onAdmin()
